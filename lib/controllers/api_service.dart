@@ -30,9 +30,6 @@ HttpMethod stringToHttpMethod(String? method) {
 class ApiService {
   late Dio _dio;
 
-  /// Base URL for all API requests
-  late String _baseUrl;
-
   ApiService._internal();
 
   static final ApiService instance = ApiService._internal();
@@ -47,8 +44,6 @@ class ApiService {
   /// ApiService.instance.init(baseUrl: "https://api.example.com");
   /// ```
   void init({required String baseUrl}) {
-    _baseUrl = baseUrl;
-
     _dio = Dio(
       BaseOptions(
         baseUrl: baseUrl,
@@ -78,11 +73,6 @@ class ApiService {
         },
       ),
     );
-  }
-
-  /// Sets the base URL for API requests.
-  void setBaseUrl(String baseUrl) {
-    _baseUrl = baseUrl;
   }
 
   // ──────────────────────────────────────────────
