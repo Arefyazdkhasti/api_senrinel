@@ -187,7 +187,7 @@ All using the `ApiService` and `DebugOverlay`.
 ## 📚 License
 
 MIT License © 2025
-Developed and maintained by [Your Name](https://github.com/yourprofile)
+Developed and maintained by [Aref Yazdkhasti](https://github.com/Arefyazdkhasti/api_senrinel)
 
 ---
 
