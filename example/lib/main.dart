@@ -1,4 +1,5 @@
 import 'package:api_sentinel/controllers/api_service.dart';
+import 'package:api_sentinel/global_configs.dart';
 import 'package:api_sentinel/widgets/debug_overlay_widget.dart';
 import 'package:flutter/material.dart';
 
@@ -14,7 +15,7 @@ class MyExampleApp extends StatelessWidget {
     return MaterialApp(
       title: 'Your Package Example',
       home: const ApiExamplePage(),
-      theme: ThemeData.dark(),
+      // theme: ThemeData.dark(),
     );
   }
 }
@@ -78,9 +79,20 @@ class _ApiExamplePageState extends State<ApiExamplePage> {
                 Row(
                   children: [
                     Expanded(
-                      child: ElevatedButton(
-                        style: ElevatedButton.styleFrom(
-                          backgroundColor: Colors.blue,
+                      child: FilledButton(
+                        style: ButtonStyle(
+                          shape:
+                              WidgetStateProperty.all<RoundedRectangleBorder>(
+                                RoundedRectangleBorder(
+                                  borderRadius: globalBorderRadius * 1.5,
+                                ),
+                              ),
+                          backgroundColor: WidgetStateProperty.all<Color>(
+                            Colors.blue,
+                          ),
+                          fixedSize: const WidgetStatePropertyAll(
+                            Size.fromHeight(48),
+                          ),
                         ),
                         child: const Text('GET /posts/1'),
                         onPressed: () {
@@ -90,12 +102,24 @@ class _ApiExamplePageState extends State<ApiExamplePage> {
                     ),
                   ],
                 ),
+                const SizedBox(height: 8),
                 Row(
                   children: [
                     Expanded(
-                      child: ElevatedButton(
-                        style: ElevatedButton.styleFrom(
-                          backgroundColor: Colors.green,
+                      child: FilledButton(
+                        style: ButtonStyle(
+                          shape:
+                              WidgetStateProperty.all<RoundedRectangleBorder>(
+                                RoundedRectangleBorder(
+                                  borderRadius: globalBorderRadius * 1.5,
+                                ),
+                              ),
+                          backgroundColor: WidgetStateProperty.all<Color>(
+                            Colors.green,
+                          ),
+                          fixedSize: const WidgetStatePropertyAll(
+                            Size.fromHeight(48),
+                          ),
                         ),
                         child: const Text('POST /posts'),
                         onPressed: () {
@@ -109,13 +133,24 @@ class _ApiExamplePageState extends State<ApiExamplePage> {
                     ),
                   ],
                 ),
-
+                const SizedBox(height: 8),
                 Row(
                   children: [
                     Expanded(
-                      child: ElevatedButton(
-                        style: ElevatedButton.styleFrom(
-                          backgroundColor: Colors.orange,
+                      child: FilledButton(
+                        style: ButtonStyle(
+                          shape:
+                              WidgetStateProperty.all<RoundedRectangleBorder>(
+                                RoundedRectangleBorder(
+                                  borderRadius: globalBorderRadius * 1.5,
+                                ),
+                              ),
+                          backgroundColor: WidgetStateProperty.all<Color>(
+                            Colors.orange,
+                          ),
+                          fixedSize: const WidgetStatePropertyAll(
+                            Size.fromHeight(48),
+                          ),
                         ),
                         child: const Text('PUT /posts/1'),
                         onPressed: () {
@@ -134,12 +169,24 @@ class _ApiExamplePageState extends State<ApiExamplePage> {
                     ),
                   ],
                 ),
+                const SizedBox(height: 8),
                 Row(
                   children: [
                     Expanded(
-                      child: ElevatedButton(
-                        style: ElevatedButton.styleFrom(
-                          backgroundColor: Colors.teal,
+                      child: FilledButton(
+                        style: ButtonStyle(
+                          shape:
+                              WidgetStateProperty.all<RoundedRectangleBorder>(
+                                RoundedRectangleBorder(
+                                  borderRadius: globalBorderRadius * 1.5,
+                                ),
+                              ),
+                          backgroundColor: WidgetStateProperty.all<Color>(
+                            Colors.teal,
+                          ),
+                          fixedSize: const WidgetStatePropertyAll(
+                            Size.fromHeight(48),
+                          ),
                         ),
                         child: const Text('PATCH /posts/1'),
                         onPressed: () {
@@ -153,12 +200,24 @@ class _ApiExamplePageState extends State<ApiExamplePage> {
                     ),
                   ],
                 ),
+                const SizedBox(height: 8),
                 Row(
                   children: [
                     Expanded(
-                      child: ElevatedButton(
-                        style: ElevatedButton.styleFrom(
-                          backgroundColor: Colors.red,
+                      child: FilledButton(
+                        style: ButtonStyle(
+                          shape:
+                              WidgetStateProperty.all<RoundedRectangleBorder>(
+                                RoundedRectangleBorder(
+                                  borderRadius: globalBorderRadius * 1.5,
+                                ),
+                              ),
+                          backgroundColor: WidgetStateProperty.all<Color>(
+                            Colors.red,
+                          ),
+                          fixedSize: const WidgetStatePropertyAll(
+                            Size.fromHeight(48),
+                          ),
                         ),
                         child: const Text('DELETE /posts/1'),
                         onPressed: () {
@@ -168,12 +227,24 @@ class _ApiExamplePageState extends State<ApiExamplePage> {
                     ),
                   ],
                 ),
+                const SizedBox(height: 8),
                 Row(
                   children: [
                     Expanded(
-                      child: ElevatedButton(
-                        style: ElevatedButton.styleFrom(
-                          backgroundColor: Colors.grey,
+                      child: FilledButton(
+                        style: ButtonStyle(
+                          shape:
+                              WidgetStateProperty.all<RoundedRectangleBorder>(
+                                RoundedRectangleBorder(
+                                  borderRadius: globalBorderRadius * 1.5,
+                                ),
+                              ),
+                          backgroundColor: WidgetStateProperty.all<Color>(
+                            Colors.grey,
+                          ),
+                          fixedSize: const WidgetStatePropertyAll(
+                            Size.fromHeight(48),
+                          ),
                         ),
                         child: const Text('GET /invalid404'),
                         onPressed: () {

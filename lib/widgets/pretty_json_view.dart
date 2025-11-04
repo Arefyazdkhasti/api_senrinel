@@ -64,7 +64,12 @@ class PrettyJsonView extends StatelessWidget {
 
     for (final match in regex.allMatches(json)) {
       if (match.start > lastMatchEnd) {
-        spans.add(TextSpan(text: json.substring(lastMatchEnd, match.start)));
+        spans.add(
+          TextSpan(
+            text: json.substring(lastMatchEnd, match.start),
+            style: const TextStyle(color: Colors.white),
+          ),
+        );
       }
 
       final str = match.group(1);
@@ -98,9 +103,17 @@ class PrettyJsonView extends StatelessWidget {
     }
 
     if (lastMatchEnd < json.length) {
-      spans.add(TextSpan(text: json.substring(lastMatchEnd)));
+      spans.add(
+        TextSpan(
+          text: json.substring(lastMatchEnd),
+          style: const TextStyle(color: Colors.white),
+        ),
+      );
     }
 
-    return TextSpan(children: spans);
+    return TextSpan(
+      children: spans,
+      style: const TextStyle(color: Colors.white),
+    );
   }
 }

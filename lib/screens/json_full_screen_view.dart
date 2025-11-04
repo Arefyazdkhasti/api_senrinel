@@ -19,6 +19,7 @@ class JsonFullScreenView extends StatelessWidget {
     return Directionality(
       textDirection: TextDirection.ltr,
       child: Scaffold(
+        backgroundColor: Colors.black,
         appBar: AppBar(
           title: Text(!showPretty ? 'Tree View' : 'Pretty JSON'),
           actions: [

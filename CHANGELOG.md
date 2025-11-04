@@ -1,5 +1,14 @@
 # Changelog
 
+# 0.0.3
+
+- Add Filter for log pages
+- Add attach to side draggable and expandable overlay
+- Not showing overlay in debug page
+
+# 0.0.2
+Format code for pub.dev
+
 ## 0.0.1
 
 **Initial release of the package**
@@ -17,3 +26,4 @@
 - Added **log filtering** (by method, status, or keyword)  
 
 - Example project demonstrating integration with a **public REST API**  
+

@@ -22,7 +22,7 @@ Add this line to your `pubspec.yaml`:
 
 ```yaml
 dependencies:
-  api_sentinel: ^0.0.1
+  api_sentinel: ^0.0.3
 ````
 
 Then run:
@@ -153,9 +153,9 @@ Whenever your app performs an API call through `ApiService`, it will appear in a
 
 
 <p align="center">
-  <img src="images/draggable_widget.png" width="30%" />
-  <img src="images/request_logs.png" width="30%" />
-  <img src="images/request_details.png" width="30%" />
+  <img src="images/draggable_widget.png" width="30.8%" />
+  <img src="images/request_logs.png" width="31%" />
+  <img src="images/request_details.png" width="30.9%" />
 </p>
 
 ---

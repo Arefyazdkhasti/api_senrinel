@@ -2,13 +2,12 @@ import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 
+import '../../global_configs.dart';
 import '../controllers/api_service.dart';
 import '../controllers/debug_overlay/debug_log_controller.dart';
-import '../global_configs.dart';
 import '../widgets/json_tree_view.dart';
-import '../widgets/search_input_field.dart';
-import 'json_full_screen_view.dart';
 import '../widgets/pretty_json_view.dart';
+import 'json_full_screen_view.dart';
 
 class DebugPage extends StatefulWidget {
   const DebugPage({super.key});
@@ -18,7 +17,11 @@ class DebugPage extends StatefulWidget {
 }
 
 class _DebugPageState extends State<DebugPage> {
+  final controller = Get.find<DebugLogController>();
   bool showPrettyJson = true;
+
+  final searchController = TextEditingController();
+  final searchFocus = FocusNode();
 
   Widget methodType(HttpMethod method) {
     var theme = Theme.of(context);
@@ -82,7 +85,20 @@ class _DebugPageState extends State<DebugPage> {
     );
   }
 
-  final controller = Get.find<DebugLogController>();
+  @override
+  void dispose() {
+    searchController.dispose();
+    searchFocus.dispose();
+    super.dispose();
+  }
+
+  @override
+  void initState() {
+    super.initState();
+    WidgetsBinding.instance.addPostFrameCallback(
+      (_) => controller.resetFilters(),
+    );
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -93,6 +109,7 @@ class _DebugPageState extends State<DebugPage> {
       child: Scaffold(
         appBar: AppBar(
           title: const Text('API Debug Logs'),
+          forceMaterialTransparency: true,
           actions: [
             IconButton(
               icon: Icon(
@@ -107,79 +124,161 @@ class _DebugPageState extends State<DebugPage> {
             ),
           ],
         ),
-        bottomSheet: Padding(
-          padding: const EdgeInsets.fromLTRB(16, 8, 16, 36),
-          child: SearchInputCustomTextField(
-            searchTextEditingController: TextEditingController(),
-            search: controller.filterLogs,
-            searchFocus: FocusNode(),
-          ),
-        ),
         body: Obx(() {
-          return controller.logs.isEmpty
-              ? const Center(child: Text('No logs found!'))
-              : ListView.separated(
-                  itemCount: controller.logs.length,
-                  separatorBuilder: (context, index) => const Divider(),
-                  itemBuilder: (context, index) {
-                    final log = controller.logs[index];
-                    return ExpansionTile(
-                      title: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Row(
-                            children: [
-                              methodType(log.method),
-                              const SizedBox(width: 8),
-                              Expanded(
-                                child: Text(
-                                  log.url.replaceAll(log.baseUrl, ''),
-                                  style: TextStyle(
-                                    color: log.isError
-                                        ? Colors.red
-                                        : (log.statusCode != null &&
-                                                  log.statusCode! >= 400
-                                              ? Colors.orange
-                                              : Colors.green),
-                                  ),
-                                  maxLines: 2,
-                                  overflow: TextOverflow.ellipsis,
-                                ),
-                              ),
-                            ],
-                          ),
-                          const SizedBox(height: 8),
-                          Row(
-                            children: [
-                              requestStatusCode(log.statusCode ?? 0),
-                              const SizedBox(width: 8),
-                              Text(
-                                '${DateTime.now().difference(log.timestamp).inSeconds}s ago',
-                              ),
-                              const SizedBox(width: 8),
-                              Text(
-                                '| Duration: ${log.duration?.inMilliseconds ?? 0}ms',
-                                style: theme.textTheme.bodyMedium?.copyWith(
-                                  color:
-                                      (log.duration?.inMilliseconds ?? 0) > 3000
-                                      ? Colors.red
-                                      : Colors.grey,
-                                ),
-                              ),
-                            ],
-                          ),
-                        ],
+          return Column(
+            children: [
+              const SizedBox(height: 12),
+              Padding(
+                padding: globalMargin * 3,
+                child: SearchInputCustomTextField(
+                  searchTextEditingController: searchController,
+                  search: (query) => controller.setSearch(query),
+                  searchFocus: searchFocus,
+                ),
+              ),
+              const SizedBox(height: 12),
+              Padding(
+                padding: globalMargin * 3,
+                child: Row(
+                  children: [
+                    Expanded(
+                      child: _buildDropdownWrapper(
+                        child: DropdownButton<String>(
+                          value: controller.selectedMethod.value.isEmpty
+                              ? null
+                              : controller.selectedMethod.value,
+                          hint: const Text('Method'),
+                          underline: const SizedBox(),
+                          icon: const SizedBox(),
+                          items:
+                              ['ALL', 'GET', 'POST', 'PATCH', 'PUT', 'DELETE']
+                                  .map(
+                                    (m) => DropdownMenuItem(
+                                      value: m,
+                                      child: Text(m),
+                                    ),
+                                  )
+                                  .toList(),
+                          onChanged: (value) {
+                            controller.setMethod(value);
+                            FocusScope.of(context).unfocus();
+                          },
+                        ),
                       ),
-                      children: [
-                        if (log.requestData != null)
-                          _buildSection('Request', log.requestData),
-                        _buildSection('Response', log.responseData),
-                        if (log.errorMessage != null)
-                          _buildSection('Error', log.errorMessage),
-                      ],
-                    );
-                  },
-                );
+                    ),
+                    const SizedBox(width: 8),
+                    Expanded(
+                      child: _buildDropdownWrapper(
+                        child: DropdownButton<LogStatusFilter>(
+                          value: controller.statusFilter.value,
+                          underline: const SizedBox(),
+                          icon: const SizedBox(),
+                          items: LogStatusFilter.values
+                              .map(
+                                (f) => DropdownMenuItem(
+                                  value: f,
+                                  child: Text(f.name),
+                                ),
+                              )
+                              .toList(),
+                          onChanged: (filter) {
+                            controller.setStatusFilter(filter);
+                            FocusScope.of(context).unfocus();
+                          },
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              const SizedBox(height: 12),
+              Expanded(
+                child: controller.logs.isEmpty
+                    ? const Center(child: Text('No logs found!'))
+                    : ListView.separated(
+                        itemCount: controller.logs.length,
+                        separatorBuilder: (context, index) => const Divider(),
+                        itemBuilder: (context, index) {
+                          final log = controller.logs[index];
+                          return ExpansionTile(
+                            backgroundColor: Colors.transparent,
+                            collapsedBackgroundColor: Colors.transparent,
+                            title: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Row(
+                                  children: [
+                                    methodType(log.method),
+                                    const SizedBox(width: 8),
+                                    requestStatusCode(log.statusCode ?? 0),
+                                  ],
+                                ),
+                                const SizedBox(height: 8),
+                                Row(
+                                  children: [
+                                    Expanded(
+                                      child: Text(
+                                        log.url.replaceAll(log.baseUrl, ''),
+                                        style: TextStyle(
+                                          color: log.isError
+                                              ? Colors.red
+                                              : (log.statusCode != null &&
+                                                        log.statusCode! >= 400
+                                                    ? Colors.orange
+                                                    : Colors.green),
+                                        ),
+                                        maxLines: 2,
+                                        overflow: TextOverflow.ellipsis,
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                                const SizedBox(height: 8),
+                                Row(
+                                  children: [
+                                    Row(
+                                      children: [
+                                        const Icon(
+                                          Icons.timer_outlined,
+                                          size: 16,
+                                        ),
+                                        const SizedBox(width: 4),
+                                        Text(
+                                          '${DateTime.now().difference(log.timestamp).inSeconds}s ago',
+                                        ),
+                                        Text(
+                                          ' | Duration: ${log.duration?.inMilliseconds ?? 0}ms',
+                                          style: theme.textTheme.bodyMedium
+                                              ?.copyWith(
+                                                color:
+                                                    (log
+                                                                .duration
+                                                                ?.inMilliseconds ??
+                                                            0) >
+                                                        3000
+                                                    ? Colors.red
+                                                    : Colors.grey,
+                                              ),
+                                        ),
+                                      ],
+                                    ),
+                                  ],
+                                ),
+                              ],
+                            ),
+                            children: [
+                              if (log.requestData != null)
+                                _buildSection('Request', log.requestData),
+                              _buildSection('Response', log.responseData),
+                              if (log.errorMessage != null)
+                                _buildSection('Error', log.errorMessage),
+                            ],
+                          );
+                        },
+                      ),
+              ),
+            ],
+          );
         }),
       ),
     );
@@ -317,4 +416,85 @@ class JsonViewerWidget extends StatelessWidget {
     final trimmed = data.trim();
     return trimmed.startsWith('{') || trimmed.startsWith('[');
   }
+}
+
+class SearchInputCustomTextField extends StatefulWidget {
+  final TextEditingController searchTextEditingController;
+  final FocusNode searchFocus;
+  final Function(String) search;
+
+  const SearchInputCustomTextField({
+    super.key,
+    required this.searchTextEditingController,
+    required this.searchFocus,
+    required this.search,
+  });
+
+  @override
+  State<SearchInputCustomTextField> createState() =>
+      _SearchInputCustomTextFieldState();
+}
+
+class _SearchInputCustomTextFieldState
+    extends State<SearchInputCustomTextField> {
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final controller = widget.searchTextEditingController;
+
+    return Container(
+      height: 52,
+      decoration: BoxDecoration(
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(width: 1, color: theme.colorScheme.outlineVariant),
+      ),
+      child: TextField(
+        controller: controller,
+        focusNode: widget.searchFocus,
+        textInputAction: TextInputAction.search,
+        keyboardType: TextInputType.text,
+        decoration: InputDecoration(
+          hintText: 'Search logs...',
+          prefixIcon: const Icon(Icons.search, size: 22),
+          suffixIcon: controller.text.isNotEmpty
+              ? IconButton(
+                  splashRadius: 18,
+                  icon: const Icon(Icons.close_rounded, size: 18),
+                  onPressed: () {
+                    controller.clear();
+                    widget.search('');
+                    setState(() {});
+                  },
+                )
+              : null,
+          border: InputBorder.none,
+          focusedBorder: InputBorder.none,
+          contentPadding: const EdgeInsets.symmetric(
+            horizontal: 14,
+            vertical: 12,
+          ),
+        ),
+        onChanged: (value) {
+          setState(() {}); // refresh suffix icon visibility
+          widget.search(value);
+        },
+      ),
+    );
+  }
+}
+
+Widget _buildDropdownWrapper({required Widget child}) {
+  return Container(
+    height: 52,
+    padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
+    decoration: BoxDecoration(
+      // color: Colors.grey.shade900.withValues(alpha: 0.08),
+      borderRadius: BorderRadius.circular(12),
+      border: Border.all(
+        color: Colors.grey.shade400.withValues(alpha: 0.8),
+        width: 1,
+      ),
+    ),
+    child: child,
+  );
 }
