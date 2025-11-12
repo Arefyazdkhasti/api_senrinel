@@ -1,5 +1,10 @@
 # Changelog
 
+# 0.0.4
+
+- Add header option to api service
+
+
 # 0.0.3
 
 - Add Filter for log pages
