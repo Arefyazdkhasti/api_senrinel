@@ -100,6 +100,7 @@ class ApiService {
     dynamic data,
     Map<String, dynamic>? queryParameters,
     Options? options,
+    Map<String, String>? headers,
     CancelToken? cancelToken,
     void Function(int, int)? onSendProgress,
     void Function(int, int)? onReceiveProgress,
@@ -113,6 +114,10 @@ class ApiService {
     //set base option for request if not provided
     if (options != null) {
       defaultOptions = options;
+    } else {
+      Map<String, String> customHeaders = headers ?? {};
+
+      defaultOptions = Options(headers: customHeaders);
     }
     try {
       // Perform the request based on the specified HTTP method.
