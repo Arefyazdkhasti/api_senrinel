@@ -127,7 +127,7 @@ class ApiService {
           response = await _dio.get(
             url,
             data: data,
-            options: defaultOptions ?? Options(),
+            options: defaultOptions,
             queryParameters: queryParameters,
             cancelToken: cancelToken,
             onReceiveProgress: onReceiveProgress,
