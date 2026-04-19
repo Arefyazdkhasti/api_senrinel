@@ -1,6 +1,11 @@
+import 'dart:io';
+
+import 'package:cookie_jar/cookie_jar.dart';
 import 'package:dio/dio.dart';
 import 'package:dio/dio.dart' as dio;
+import 'package:dio_cookie_manager/dio_cookie_manager.dart';
 import 'package:flutter/foundation.dart';
+import 'package:path_provider/path_provider.dart';
 
 import 'package:get/get.dart';
 
@@ -29,6 +34,8 @@ HttpMethod stringToHttpMethod(String? method) {
 
 class ApiService {
   late Dio _dio;
+  late String _cookiePath;
+  late final CookieJar _cookieJar;
 
   ApiService._internal();
 
@@ -43,7 +50,10 @@ class ApiService {
   /// ```dart
   /// ApiService.instance.init(baseUrl: "https://api.example.com");
   /// ```
-  void init({required String baseUrl}) {
+  Future<void> init({
+    required String baseUrl,
+    bool needToShowLog = false,
+  }) async {
     _dio = Dio(
       BaseOptions(
         baseUrl: baseUrl,
@@ -53,11 +63,43 @@ class ApiService {
       ),
     );
 
+    // Handle cookie from server
+    if (!kIsWeb) {
+      // In mobile device
+      Directory dir = await getApplicationSupportDirectory();
+      _cookiePath = '${dir.path}/cookies';
+
+      _cookieJar = PersistCookieJar(
+        storage: FileStorage(_cookiePath),
+      );
+
+      _dio.interceptors.add(CookieManager(_cookieJar));
+    } else {
+      // In web PWA
+      // !IMPORTANT: You should `withCredentials` in web to allow handle cookie
+      // Example:
+      // options: Options(
+      //   extra: {if (kIsWeb) 'withCredentials': true},
+      // ),
+      _cookieJar = CookieJar();
+    }
+
     if (!kReleaseMode) {
       if (!Get.isRegistered<DebugLogController>()) {
         Get.put(DebugLogController(), permanent: true);
       }
       _dio.interceptors.add(DebugInterceptor());
+    }
+
+    if (needToShowLog) {
+      _dio.interceptors.add(
+        dio.LogInterceptor(
+          requestHeader: true,
+          responseHeader: true,
+          requestBody: true,
+          responseBody: true,
+        ),
+      );
     }
 
     _dio.interceptors.add(
@@ -188,5 +230,54 @@ class ApiService {
     } catch (e) {
       onCatchException(e);
     }
+  }
+
+  /// Clears all cookies stored by Dio.
+  ///
+  /// This method resets the current cookie state by recreating the
+  /// underlying [PersistCookieJar], effectively removing all cookies
+  /// from memory and disk (depending on storage configuration).
+  ///
+  /// Use this when you need to:
+  /// - Log out a user
+  /// - Reset authentication/session state
+  /// - Ensure no stale cookies are reused
+  Future<void> clearCookies() async {
+    if (kIsWeb) return;
+
+    // Recreate CookieJar (clears memory only)
+    _cookieJar = PersistCookieJar(storage: FileStorage(_cookiePath));
+
+    // Re-attach interceptor
+    _dio.interceptors.removeWhere((i) => i is CookieManager);
+    _dio.interceptors.add(CookieManager(_cookieJar));
+  }
+
+  /// Retrieves cookies for a specific request URL.
+  ///
+  /// This method loads all cookies that match the given [url]
+  /// from the current [_cookieJar]. These cookies are the ones
+  /// that would be sent automatically with a request to this URL.
+  ///
+  /// Parameters:
+  /// - [url]: The target endpoint used to filter relevant cookies.
+  ///
+  /// Returns:
+  /// - A list of [Cookie] objects associated with the provided URL.
+  ///
+  /// Notes:
+  /// - This does not trigger a network request.
+  /// - Useful for debugging or manually inspecting session state.
+  /// - Works only on non-web platforms when using Dio with CookieJar.
+  ///
+  /// Example:
+  /// ```dart
+  /// final cookies = await getCookies("https://example.com");
+  /// for (final cookie in cookies) {
+  ///   print("${cookie.name}: ${cookie.value}");
+  /// }
+  /// ```
+  Future<List<Cookie>> getCookies(String url) async {
+    return _cookieJar.loadForRequest(Uri.parse(url));
   }
 }

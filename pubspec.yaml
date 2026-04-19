@@ -1,6 +1,6 @@
 name: api_sentinel
 description: "A lightweight Dio-powered API service for Flutter that automatically logs requests"
-version: 0.0.4
+version: 0.0.5
 homepage: https://github.com/Arefyazdkhasti/api_senrinel
 repository: https://github.com/Arefyazdkhasti/api_senrinel
 issue_tracker: https://github.com/Arefyazdkhasti/api_senrinel/issues
@@ -19,6 +19,11 @@ dependencies:
 
   # State management
   get: ^4.6.6
+
+  # Cookie management
+  cookie_jar: ^4.0.9
+  path_provider: ^2.1.5
+  dio_cookie_manager: ^3.4.0
 
 dev_dependencies:
   flutter_test:

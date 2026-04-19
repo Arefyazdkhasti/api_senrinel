@@ -1,9 +1,13 @@
 # Changelog
 
+## 0.0.5
+
+- Added cookie management support in API service using persistent storage for session handling.
+- Introduced configurable logging via `needToShowLog` flag in the ini method in ApiService.
+
 # 0.0.4
 
 - Add header option to api service
-
 
 # 0.0.3
 
@@ -12,6 +16,7 @@
 - Not showing overlay in debug page
 
 # 0.0.2
+
 Format code for pub.dev
 
 ## 0.0.1
@@ -19,16 +24,15 @@ Format code for pub.dev
 **Initial release of the package**
 
 - Introduced a **centralized API service** with:
-  - Unified `GET`, `POST`, `PUT`, `PATCH`, and `DELETE` request handling  
-  - Built-in **error catching** (`DioException` & general exceptions)  
-  - Custom **success and failure callbacks**  
+    - Unified `GET`, `POST`, `PUT`, `PATCH`, and `DELETE` request handling
+    - Built-in **error catching** (`DioException` & general exceptions)
+    - Custom **success and failure callbacks**
 
-- Added a **floating draggable debug overlay** for real-time API inspection  
-  - View logs, request bodies, and responses directly in-app  
-  - Includes **JSON tree view** and **color-highlighted JSON viewer**  
-  - Expandable to a **full-screen log viewer**  
+- Added a **floating draggable debug overlay** for real-time API inspection
+    - View logs, request bodies, and responses directly in-app
+    - Includes **JSON tree view** and **color-highlighted JSON viewer**
+    - Expandable to a **full-screen log viewer**
 
-- Added **log filtering** (by method, status, or keyword)  
+- Added **log filtering** (by method, status, or keyword)
 
-- Example project demonstrating integration with a **public REST API**  
-
+- Example project demonstrating integration with a **public REST API**
