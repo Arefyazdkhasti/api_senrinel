@@ -34,7 +34,6 @@ HttpMethod stringToHttpMethod(String? method) {
 
 class ApiService {
   late Dio _dio;
-  late String _cookiePath;
   late final CookieJar _cookieJar;
 
   ApiService._internal();
@@ -67,16 +66,17 @@ class ApiService {
     if (!kIsWeb) {
       // In mobile device
       Directory dir = await getApplicationSupportDirectory();
-      _cookiePath = '${dir.path}/cookies';
+      final cookiePath = '${dir.path}/cookies';
 
       _cookieJar = PersistCookieJar(
-        storage: FileStorage(_cookiePath),
+        storage: FileStorage(cookiePath),
       );
 
       _dio.interceptors.add(CookieManager(_cookieJar));
     } else {
       // In web PWA
-      // !IMPORTANT: You should `withCredentials` in web to allow handle cookie
+      // Cookies are handled by the browser on web.
+      // !IMPORTANT: You should use `withCredentials` in web when needed.
       // Example:
       // options: Options(
       //   extra: {if (kIsWeb) 'withCredentials': true},
@@ -234,23 +234,16 @@ class ApiService {
 
   /// Clears all cookies stored by Dio.
   ///
-  /// This method resets the current cookie state by recreating the
-  /// underlying [PersistCookieJar], effectively removing all cookies
-  /// from memory and disk (depending on storage configuration).
+  /// This method clears cookies from the current [_cookieJar].
+  /// On non-web platforms with [PersistCookieJar], this clears both
+  /// in-memory cookies and cookies persisted on disk.
   ///
   /// Use this when you need to:
   /// - Log out a user
   /// - Reset authentication/session state
   /// - Ensure no stale cookies are reused
   Future<void> clearCookies() async {
-    if (kIsWeb) return;
-
-    // Recreate CookieJar (clears memory only)
-    _cookieJar = PersistCookieJar(storage: FileStorage(_cookiePath));
-
-    // Re-attach interceptor
-    _dio.interceptors.removeWhere((i) => i is CookieManager);
-    _dio.interceptors.add(CookieManager(_cookieJar));
+    await _cookieJar.deleteAll();
   }
 
   /// Retrieves cookies for a specific request URL.

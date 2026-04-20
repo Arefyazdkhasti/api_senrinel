@@ -3,7 +3,7 @@
 ## 0.0.5
 
 - Added cookie management support in API service using persistent storage for session handling.
-- Introduced configurable logging via `needToShowLog` flag in the ini method in ApiService.
+- Introduced configurable logging via `needToShowLog` flag in the init method in ApiService.
 
 # 0.0.4
 
