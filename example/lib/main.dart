@@ -22,6 +22,7 @@ class MyExampleApp extends StatelessWidget {
 
 class ApiExamplePage extends StatefulWidget {
   const ApiExamplePage({super.key});
+
   @override
   State<ApiExamplePage> createState() => _ApiExamplePageState();
 }
@@ -33,7 +34,11 @@ class _ApiExamplePageState extends State<ApiExamplePage> {
   void initState() {
     super.initState();
     // Initialize ApiService once with baseUrl
-    ApiService.instance.init(baseUrl: 'https://jsonplaceholder.typicode.com');
+    WidgetsBinding.instance.addPostFrameCallback((_) async {
+      await ApiService.instance.init(
+        baseUrl: 'https://jsonplaceholder.typicode.com',
+      );
+    });
   }
 
   void _callApi({
