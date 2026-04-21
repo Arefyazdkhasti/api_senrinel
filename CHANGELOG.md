@@ -1,5 +1,10 @@
 # Changelog
 
+## 0.0.6
+
+- Change `CookieJar` into nullable instead of late
+
+
 ## 0.0.5
 
 - Added cookie management support in API service using persistent storage for session handling.

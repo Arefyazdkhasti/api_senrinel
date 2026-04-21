@@ -34,7 +34,7 @@ HttpMethod stringToHttpMethod(String? method) {
 
 class ApiService {
   late Dio _dio;
-  late final CookieJar _cookieJar;
+  CookieJar? _cookieJar;
 
   ApiService._internal();
 
@@ -68,11 +68,11 @@ class ApiService {
       Directory dir = await getApplicationSupportDirectory();
       final cookiePath = '${dir.path}/cookies';
 
-      _cookieJar = PersistCookieJar(
-        storage: FileStorage(cookiePath),
-      );
+      _cookieJar = PersistCookieJar(storage: FileStorage(cookiePath));
 
-      _dio.interceptors.add(CookieManager(_cookieJar));
+      if (_cookieJar != null) {
+        _dio.interceptors.add(CookieManager(_cookieJar!));
+      }
     } else {
       // In web PWA
       // Cookies are handled by the browser on web.
@@ -243,7 +243,7 @@ class ApiService {
   /// - Reset authentication/session state
   /// - Ensure no stale cookies are reused
   Future<void> clearCookies() async {
-    await _cookieJar.deleteAll();
+    await _cookieJar?.deleteAll();
   }
 
   /// Retrieves cookies for a specific request URL.
@@ -271,6 +271,6 @@ class ApiService {
   /// }
   /// ```
   Future<List<Cookie>> getCookies(String url) async {
-    return _cookieJar.loadForRequest(Uri.parse(url));
+    return await _cookieJar?.loadForRequest(Uri.parse(url)) ?? [];
   }
 }
