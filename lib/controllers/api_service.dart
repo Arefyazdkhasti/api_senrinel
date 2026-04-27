@@ -52,6 +52,7 @@ class ApiService {
   Future<void> init({
     required String baseUrl,
     bool needToShowLog = false,
+    void Function(int statusCode)? onStatusCodeHandle,
   }) async {
     _dio = Dio(
       BaseOptions(
@@ -111,6 +112,11 @@ class ApiService {
           return handler.next(response);
         },
         onError: (DioException e, handler) {
+          final statusCode = e.response?.statusCode;
+
+          if (statusCode != null) {
+            onStatusCodeHandle?.call(statusCode);
+          }
           return handler.next(e);
         },
       ),
