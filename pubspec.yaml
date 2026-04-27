@@ -1,6 +1,6 @@
-name: api_sentinel
+name: api_sentinel_sdk
 description: "A lightweight Dio-powered API service for Flutter that automatically logs requests"
-version: 0.0.6
+version: 0.0.7
 homepage: https://github.com/Arefyazdkhasti/api_senrinel
 repository: https://github.com/Arefyazdkhasti/api_senrinel
 issue_tracker: https://github.com/Arefyazdkhasti/api_senrinel/issues

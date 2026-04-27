@@ -1,5 +1,9 @@
 # Changelog
 
+## 0.0.7
+
+- Added support for `Unauthorized Flow` handling
+
 ## 0.0.6
 
 - Change `CookieJar` into nullable instead of late
