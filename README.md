@@ -23,7 +23,7 @@ Add this line to your `pubspec.yaml`:
 
 ```yaml
 dependencies:
-  api_sentinel: ^0.0.6
+  api_sentinel: ^0.0.7
 ````
 
 Then run:
