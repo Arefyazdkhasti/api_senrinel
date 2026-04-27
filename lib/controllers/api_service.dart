@@ -52,7 +52,10 @@ class ApiService {
   Future<void> init({
     required String baseUrl,
     bool needToShowLog = false,
-    void Function(int statusCode)? onStatusCodeHandle,
+
+    // unauthorized callback
+    int? unauthorizedStatusCode = 401,
+    void Function()? onUnauthorizedCallBack,
   }) async {
     _dio = Dio(
       BaseOptions(
@@ -114,8 +117,9 @@ class ApiService {
         onError: (DioException e, handler) {
           final statusCode = e.response?.statusCode;
 
-          if (statusCode != null) {
-            onStatusCodeHandle?.call(statusCode);
+          // handle specific status code
+          if (statusCode != null && statusCode == unauthorizedStatusCode) {
+            onUnauthorizedCallBack?.call();
           }
           return handler.next(e);
         },
