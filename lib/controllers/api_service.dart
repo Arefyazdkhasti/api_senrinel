@@ -52,7 +52,7 @@ class ApiService {
   Future<void> init({
     required String baseUrl,
     bool needToShowLog = false,
-
+    bool needToLogRequests = false,
     // unauthorized callback
     int? unauthorizedStatusCode = 401,
     void Function()? onUnauthorizedCallBack,
@@ -88,7 +88,7 @@ class ApiService {
       _cookieJar = CookieJar();
     }
 
-    if (!kReleaseMode) {
+    if (needToLogRequests) {
       if (!Get.isRegistered<DebugLogController>()) {
         Get.put(DebugLogController(), permanent: true);
       }
