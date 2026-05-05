@@ -12,7 +12,8 @@
 ✅ Centralized error handling and message parsing  
 ✅ Floating on-screen debug overlay to visualize requests  
 ✅ Built with `dio` and `get` (GetX) for lightweight reactivity  
-✅ Supports Android, iOS, and Web
+✅ Supports Android, iOS, and Web  
+✅ Built-in Unauthorized detection with callback (unauthorized status code, customizable unauthorized callback)
 
 ---
 
@@ -22,7 +23,7 @@ Add this line to your `pubspec.yaml`:
 
 ```yaml
 dependencies:
-  api_sentinel: ^0.0.6
+  api_sentinel: ^0.0.8
 ````
 
 Then run:
