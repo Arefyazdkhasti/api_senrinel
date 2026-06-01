@@ -1,5 +1,13 @@
 # Changelog
 
+## 0.0.8
+
+- Add `needToLogRequests` for adding request to the DebugLogController
+
+## 0.0.7
+
+- Added support for `Unauthorized Flow` handling
+
 ## 0.0.6
 
 - Change `CookieJar` into nullable instead of late

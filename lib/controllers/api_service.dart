@@ -52,6 +52,10 @@ class ApiService {
   Future<void> init({
     required String baseUrl,
     bool needToShowLog = false,
+    bool needToLogRequests = false,
+    // unauthorized callback
+    int? unauthorizedStatusCode = 401,
+    void Function()? onUnauthorizedCallBack,
   }) async {
     _dio = Dio(
       BaseOptions(
@@ -84,7 +88,7 @@ class ApiService {
       _cookieJar = CookieJar();
     }
 
-    if (!kReleaseMode) {
+    if (needToLogRequests) {
       if (!Get.isRegistered<DebugLogController>()) {
         Get.put(DebugLogController(), permanent: true);
       }
@@ -111,6 +115,12 @@ class ApiService {
           return handler.next(response);
         },
         onError: (DioException e, handler) {
+          final statusCode = e.response?.statusCode;
+
+          // handle specific status code
+          if (statusCode != null && statusCode == unauthorizedStatusCode) {
+            onUnauthorizedCallBack?.call();
+          }
           return handler.next(e);
         },
       ),
