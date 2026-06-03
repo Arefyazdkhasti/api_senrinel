@@ -35,7 +35,7 @@ HttpMethod stringToHttpMethod(String? method) {
   }
 }
 
-typedef NetworkMonitoringFunction = Function(NetworkMonitoringParams params);
+typedef NetworkMonitoringFunction = void Function(NetworkMonitoringParams params);
 
 class ApiService {
   late Dio _dio;
