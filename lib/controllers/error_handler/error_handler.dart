@@ -18,7 +18,9 @@ class ErrorHandler implements Exception {
   }
 }
 
-String handleErrorMessage(dynamic e, {String key = 'error_messages'}) {
+String handleErrorMessage(dynamic e, {String? key}) {
+  String errorMessageKey = key ?? 'error_messages';
+
   if (e is DioException) {
     try {
       //if the response data is null, return the default error message
@@ -28,12 +30,12 @@ String handleErrorMessage(dynamic e, {String key = 'error_messages'}) {
         return ErrorHandler.handle(e).failure.message;
       }
 
-      if (e.response?.data[key] is String) {
+      if (e.response?.data[errorMessageKey] is String) {
         //if the response data is a string, return it
-        return e.response?.data[key];
-      } else if (e.response?.data[key] is List) {
+        return e.response?.data[errorMessageKey];
+      } else if (e.response?.data[errorMessageKey] is List) {
         //if the response data is a list, return the first item as string
-        return e.response?.data[key].first as String;
+        return e.response?.data[errorMessageKey].first as String;
       } else {
         //if the response data is not a string or list, return the default error message
         return ErrorHandler.handle(e).failure.message;

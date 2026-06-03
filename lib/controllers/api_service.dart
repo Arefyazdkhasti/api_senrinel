@@ -1,5 +1,7 @@
+import 'dart:async';
 import 'dart:io';
 
+import 'package:api_sentinel/api_sentinel.dart';
 import 'package:cookie_jar/cookie_jar.dart';
 import 'package:dio/dio.dart';
 import 'package:dio/dio.dart' as dio;
@@ -9,6 +11,7 @@ import 'package:path_provider/path_provider.dart';
 
 import 'package:get/get.dart';
 
+import '../models/monitoring/network_monitoring_params.dart';
 import 'debug_overlay/debug_interceptor.dart';
 import 'debug_overlay/debug_log_controller.dart';
 
@@ -32,6 +35,9 @@ HttpMethod stringToHttpMethod(String? method) {
   }
 }
 
+typedef NetworkMonitoringFunction =
+    void Function(NetworkMonitoringParams params);
+
 class ApiService {
   late Dio _dio;
   CookieJar? _cookieJar;
@@ -39,6 +45,8 @@ class ApiService {
   ApiService._internal();
 
   static final ApiService instance = ApiService._internal();
+
+  NetworkMonitoringFunction? networkMonitoringFunction;
 
   // ──────────────────────────────────────────────
   // INITIALIZATION
@@ -54,6 +62,7 @@ class ApiService {
     bool needToShowLog = false,
     bool needToLogRequests = false,
     // unauthorized callback
+    NetworkMonitoringFunction? networkMonitoringFunction,
     int? unauthorizedStatusCode = 401,
     void Function()? onUnauthorizedCallBack,
   }) async {
@@ -65,6 +74,8 @@ class ApiService {
         sendTimeout: const Duration(milliseconds: 30000),
       ),
     );
+
+    this.networkMonitoringFunction = networkMonitoringFunction;
 
     // Handle cookie from server
     if (!kIsWeb) {
@@ -158,7 +169,8 @@ class ApiService {
     void Function(int, int)? onReceiveProgress,
     required void Function(DioException) onCatchDioException,
     required void Function(dynamic) onCatchException,
-    required void Function(dio.Response) onSuccess,
+    required FutureOr<void> Function(dio.Response) onSuccess,
+    String? handleErrorMessageKey,
   }) async {
     dio.Response response;
 
@@ -234,11 +246,34 @@ class ApiService {
         default:
           throw Exception('Unknown method');
       }
-      onSuccess(response);
+      await onSuccess(response);
     } on DioException catch (e) {
       onCatchDioException(e);
+      if (networkMonitoringFunction != null) {
+        networkMonitoringFunction!(
+          NetworkMonitoringParams(
+            stackTrace: e.stackTrace,
+            statusCode: e.response?.statusCode,
+            requestUrl: e.requestOptions.uri.toString(),
+            apiErrorMessage:
+                '${e.response?.statusMessage != null ? '${e.response?.statusMessage} / ' : ''}${handleErrorMessage(e, key: handleErrorMessageKey)}',
+            errorMessage: e.toString(),
+            runTimeErrorType: e,
+          ),
+        );
+      }
     } catch (e) {
       onCatchException(e);
+      if (networkMonitoringFunction != null) {
+        networkMonitoringFunction!(
+          NetworkMonitoringParams(
+            requestUrl: url,
+            apiErrorMessage: handleErrorMessage(e, key: handleErrorMessageKey),
+            errorMessage: e.toString(),
+            runTimeErrorType: e,
+          ),
+        );
+      }
     }
   }
 
