@@ -1,5 +1,9 @@
 # Changelog
 
+## 1.0.1 
+
+Fix importing issue
+
 ## 1.0.0
 
 Add optional network monitoring integration to API service and make error handling more flexible.
