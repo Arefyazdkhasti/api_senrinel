@@ -1,5 +1,19 @@
 # Changelog
 
+## 1.0.0
+
+Add optional network monitoring integration to API service and make error handling more flexible.
+
+New Features:
+
+Introduce a pluggable networkMonitoringFunction callback in ApiService to capture details of network-related exceptions.
+Add NetworkMonitoringParams model to standardize data passed to network monitoring integrations.
+Enhancements:
+
+Allow ApiService request success handlers to be async for more flexible post-response processing.
+Extend handleErrorMessage to accept an optional error key override when parsing API error responses.
+
+
 ## 0.0.8
 
 - Add `needToLogRequests` for adding request to the DebugLogController

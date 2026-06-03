@@ -35,7 +35,8 @@ HttpMethod stringToHttpMethod(String? method) {
   }
 }
 
-typedef NetworkMonitoringFunction = void Function(NetworkMonitoringParams params);
+typedef NetworkMonitoringFunction =
+    void Function(NetworkMonitoringParams params);
 
 class ApiService {
   late Dio _dio;
@@ -247,6 +248,7 @@ class ApiService {
       }
       await onSuccess(response);
     } on DioException catch (e) {
+      onCatchDioException(e);
       if (networkMonitoringFunction != null) {
         networkMonitoringFunction!(
           NetworkMonitoringParams(
@@ -260,8 +262,8 @@ class ApiService {
           ),
         );
       }
-      onCatchDioException(e);
     } catch (e) {
+      onCatchException(e);
       if (networkMonitoringFunction != null) {
         networkMonitoringFunction!(
           NetworkMonitoringParams(
@@ -272,7 +274,6 @@ class ApiService {
           ),
         );
       }
-      onCatchException(e);
     }
   }
 

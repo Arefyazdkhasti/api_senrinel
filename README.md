@@ -14,6 +14,7 @@
 ✅ Built with `dio` and `get` (GetX) for lightweight reactivity  
 ✅ Supports Android, iOS, and Web  
 ✅ Built-in Unauthorized detection with callback (unauthorized status code, customizable unauthorized callback)
+✅ Optional network monitoring callback with structured error params
 
 ---
 
@@ -23,8 +24,8 @@ Add this line to your `pubspec.yaml`:
 
 ```yaml
 dependencies:
-  api_sentinel: ^0.0.8
-````
+  api_sentinel: ^1.0.0
+```
 
 Then run:
 
@@ -51,12 +52,45 @@ The library is built around three core layers:
 ### 1️⃣ Initialize the Service
 
 ```dart
-final api = ApiService(baseUrl: 'YOUR_BASE_URL');
+await ApiService.instance.init(
+  baseUrl: 'YOUR_BASE_URL',
+  needToShowLog: false,
+  needToLogRequests: false,
+  unauthorizedStatusCode: 401,
+  onUnauthorizedCallBack: () {
+    // Handle session expiration or redirect to login.
+  },
+  networkMonitoringFunction: (params) {
+    print('Request URL: ${params.requestUrl}');
+    print('Status Code: ${params.statusCode}');
+    print('API Error: ${params.apiErrorMessage}');
+    print('Runtime Error: ${params.runTimeErrorType}');
+  },
+);
 ```
 
 ---
 
-### 2️⃣ Make a Request
+### 2️⃣ Monitor Network Failures
+
+`networkMonitoringFunction` receives a `NetworkMonitoringParams` object whenever a request fails with either a `DioException` or another runtime exception.
+
+```dart
+class NetworkMonitoringParams {
+  final StackTrace? stackTrace;
+  final String? requestUrl;
+  final int? statusCode;
+  final String? apiErrorMessage;
+  final String? errorMessage;
+  final Object? runTimeErrorType;
+}
+```
+
+Use it to capture the request URL, HTTP status code, parsed API error message, raw error text, and the original runtime error object in one place.
+
+---
+
+### 3️⃣ Make a Request
 
 Each request is wrapped with `ApiService.instance.request()`
 This ensures that error handling, logging, and overlay integration all happen automatically.
@@ -81,7 +115,7 @@ This pattern applies to **any HTTP method** — just change the `method` and `ur
 
 ---
 
-### 3️⃣ Supported HTTP Methods
+### 4️⃣ Supported HTTP Methods
 
 You can use all standard HTTP verbs through the `HttpMethod` enum:
 
