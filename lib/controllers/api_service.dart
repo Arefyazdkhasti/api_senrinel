@@ -1,7 +1,6 @@
 import 'dart:async';
 import 'dart:io';
 
-import 'package:api_sentinel/api_sentinel.dart';
 import 'package:cookie_jar/cookie_jar.dart';
 import 'package:dio/dio.dart';
 import 'package:dio/dio.dart' as dio;
@@ -11,9 +10,11 @@ import 'package:path_provider/path_provider.dart';
 
 import 'package:get/get.dart';
 
+import '../models/monitoring/network_monitoring_function.dart';
 import '../models/monitoring/network_monitoring_params.dart';
 import 'debug_overlay/debug_interceptor.dart';
 import 'debug_overlay/debug_log_controller.dart';
+import 'error_handler/error_handler.dart';
 
 // Enumeration to represent HTTP request methods.
 enum HttpMethod { get, post, put, delete, patch, unknown }
@@ -35,35 +36,71 @@ HttpMethod stringToHttpMethod(String? method) {
   }
 }
 
-typedef NetworkMonitoringFunction =
-    void Function(NetworkMonitoringParams params);
-
 class ApiService {
   late Dio _dio;
   CookieJar? _cookieJar;
 
   ApiService._internal();
 
-  static final ApiService instance = ApiService._internal();
+  static ApiService? _instance;
 
-  NetworkMonitoringFunction? networkMonitoringFunction;
+  /// Returns the singleton initialized by [init].
+  ///
+  /// Throws [StateError] if [init] has not been called with
+  /// `needInitialGlobalInstance: true` (the default).
+  static ApiService get instance {
+    final instance = _instance;
+    if (instance == null) {
+      throw StateError(
+        'ApiService has not been initialized. '
+        'Call ApiService.init() before accessing ApiService.instance.',
+      );
+    }
+    return instance;
+  }
+
+  NetworkMonitoringFunction? _networkMonitoringFunction;
 
   // ──────────────────────────────────────────────
   // INITIALIZATION
   // ──────────────────────────────────────────────
 
-  /// Must be called once before using [request].
+  /// Must be called before using [instance] or [request].
   /// Example:
   /// ```dart
-  /// ApiService.instance.init(baseUrl: "https://api.example.com");
+  /// await ApiService.init(baseUrl: "https://api.example.com");
   /// ```
-  Future<void> init({
+  static Future<ApiService> init({
     required String baseUrl,
     bool needToShowLog = false,
     bool needToLogRequests = false,
     // unauthorized callback
     NetworkMonitoringFunction? networkMonitoringFunction,
     int? unauthorizedStatusCode = 401,
+    void Function()? onUnauthorizedCallBack,
+    bool needInitialGlobalInstance = true,
+  }) async {
+    final service = ApiService._internal();
+    await service.initConfig(
+      baseUrl: baseUrl,
+      needToShowLog: needToShowLog,
+      needToLogRequests: needToLogRequests,
+      networkMonitoringFunction: networkMonitoringFunction,
+      unauthorizedStatusCode: unauthorizedStatusCode,
+      onUnauthorizedCallBack: onUnauthorizedCallBack,
+    );
+    if (needInitialGlobalInstance) {
+      _instance = service;
+    }
+    return service;
+  }
+
+  Future<void> initConfig({
+    required String baseUrl,
+    required bool needToShowLog,
+    required bool needToLogRequests,
+    NetworkMonitoringFunction? networkMonitoringFunction,
+    required int? unauthorizedStatusCode,
     void Function()? onUnauthorizedCallBack,
   }) async {
     _dio = Dio(
@@ -75,7 +112,7 @@ class ApiService {
       ),
     );
 
-    this.networkMonitoringFunction = networkMonitoringFunction;
+    _networkMonitoringFunction = networkMonitoringFunction;
 
     // Handle cookie from server
     if (!kIsWeb) {
@@ -249,8 +286,8 @@ class ApiService {
       await onSuccess(response);
     } on DioException catch (e) {
       onCatchDioException(e);
-      if (networkMonitoringFunction != null) {
-        networkMonitoringFunction!(
+      if (_networkMonitoringFunction != null) {
+        _networkMonitoringFunction!.call(
           NetworkMonitoringParams(
             stackTrace: e.stackTrace,
             statusCode: e.response?.statusCode,
@@ -264,8 +301,8 @@ class ApiService {
       }
     } catch (e) {
       onCatchException(e);
-      if (networkMonitoringFunction != null) {
-        networkMonitoringFunction!(
+      if (_networkMonitoringFunction != null) {
+        _networkMonitoringFunction!.call(
           NetworkMonitoringParams(
             requestUrl: url,
             apiErrorMessage: handleErrorMessage(e, key: handleErrorMessageKey),
