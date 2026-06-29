@@ -1,8 +1,6 @@
 import 'dart:async';
 import 'dart:io';
 
-import 'package:api_sentinel/api_sentinel.dart';
-import 'package:api_sentinel/models/monitoring/network_monitoring_function.dart';
 import 'package:cookie_jar/cookie_jar.dart';
 import 'package:dio/dio.dart';
 import 'package:dio/dio.dart' as dio;
@@ -12,9 +10,11 @@ import 'package:path_provider/path_provider.dart';
 
 import 'package:get/get.dart';
 
+import '../models/monitoring/network_monitoring_function.dart';
 import '../models/monitoring/network_monitoring_params.dart';
 import 'debug_overlay/debug_interceptor.dart';
 import 'debug_overlay/debug_log_controller.dart';
+import 'error_handler/error_handler.dart';
 
 // Enumeration to represent HTTP request methods.
 enum HttpMethod { get, post, put, delete, patch, unknown }
@@ -44,8 +44,19 @@ class ApiService {
 
   static ApiService? _instance;
 
+  /// Returns the singleton initialized by [init].
+  ///
+  /// Throws [StateError] if [init] has not been called with
+  /// `needInitialGlobalInstance: true` (the default).
   static ApiService get instance {
-    return _instance ?? ApiService._internal();
+    final instance = _instance;
+    if (instance == null) {
+      throw StateError(
+        'ApiService has not been initialized. '
+        'Call ApiService.init() before accessing ApiService.instance.',
+      );
+    }
+    return instance;
   }
 
   NetworkMonitoringFunction? _networkMonitoringFunction;
@@ -67,7 +78,7 @@ class ApiService {
     NetworkMonitoringFunction? networkMonitoringFunction,
     int? unauthorizedStatusCode = 401,
     void Function()? onUnauthorizedCallBack,
-    bool needIntitialGlobalInstance = true,
+    bool needInitialGlobalInstance = true,
   }) async {
     final service = ApiService._internal();
     await service.initConfig(
@@ -78,7 +89,7 @@ class ApiService {
       unauthorizedStatusCode: unauthorizedStatusCode,
       onUnauthorizedCallBack: onUnauthorizedCallBack,
     );
-    if (needIntitialGlobalInstance) {
+    if (needInitialGlobalInstance) {
       _instance = service;
     }
     return service;

@@ -35,9 +35,7 @@ class _ApiExamplePageState extends State<ApiExamplePage> {
     super.initState();
     // Initialize ApiService once with baseUrl
     WidgetsBinding.instance.addPostFrameCallback((_) async {
-      await ApiService.init(
-        baseUrl: 'https://jsonplaceholder.typicode.com',
-      );
+      await ApiService.init(baseUrl: 'https://jsonplaceholder.typicode.com');
     });
   }
 

@@ -1,5 +1,23 @@
 # Changelog
 
+## 1.1.0
+
+Fix `ApiService` singleton initialization and add support for multiple configured instances.
+
+**Breaking changes:**
+
+- `ApiService.instance` now throws a `StateError` when accessed before `ApiService.init()` instead of returning an uninitialized instance.
+- Renamed `needIntitialGlobalInstance` to `needInitialGlobalInstance` in `ApiService.init()`.
+
+**Enhancements:**
+
+- `ApiService.init()` returns the configured service instance, so callers can keep and use dedicated instances when `needInitialGlobalInstance` is `false`.
+- Export `NetworkMonitoringParams` and `NetworkMonitoringFunction` from the main library entry point.
+
+**Fixes:**
+
+- Prevent subtle runtime bugs from using an uninitialized `ApiService` via the `instance` getter.
+
 ## 1.0.0
 
 Add optional network monitoring integration to API service and make error handling more flexible.
