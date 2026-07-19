@@ -1,4 +1,7 @@
 # Changelog
+## 1.1.1
+
+Add `dioExceptionType`, `dioMessage` and `dioUnderlyingError` to NetworkMonitoringParams 
 
 ## 1.1.0
 

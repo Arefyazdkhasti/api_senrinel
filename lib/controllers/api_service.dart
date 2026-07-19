@@ -296,6 +296,9 @@ class ApiService {
                 '${e.response?.statusMessage != null ? '${e.response?.statusMessage} / ' : ''}${handleErrorMessage(e, key: handleErrorMessageKey)}',
             errorMessage: e.toString(),
             runTimeErrorType: e,
+            dioExceptionType: e.type.name,
+            dioMessage: e.message,
+            dioUnderlyingError: e.error?.toString(),
           ),
         );
       }
