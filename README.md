@@ -18,7 +18,9 @@
 ✅ Built with `dio` and `get` (GetX) for lightweight reactivity  
 ✅ Supports Android, iOS, and Web  
 ✅ Built-in Unauthorized detection with callback (unauthorized status code, customizable unauthorized callback)
-✅ Optional network monitoring callback with structured error params
+✅ Optional network monitoring callback with structured error params  
+✅ Secret knock gesture to reveal a hidden debug entry point  
+✅ TOTP-gated access to the debug overlay in release builds
 
 ---
 
@@ -28,7 +30,7 @@ Add this line to your `pubspec.yaml`:
 
 ```yaml
 dependencies:
-  api_sentinel: ^1.1.2
+  api_sentinel: ^2.0.0
 ```
 
 Then run:
@@ -48,14 +50,14 @@ The library is built around three core layers:
 | **ApiService**   | Handles all HTTP requests (GET, POST, PUT, PATCH, DELETE) through Dio.                  |
 | **ErrorHandler** | Converts all errors (network, timeout, response, etc.) into readable `Failure` objects. |
 | **DebugOverlay** | Shows all ongoing and past requests on top of your UI during runtime (toggleable).      |
-
+| **SecretKncock and Totp Flow** | Trigger via custom secret knock and accept Authenticator secret 6 digit codes.      |
 ---
 
 ## ⚙️ Usage
 
 ### 1️⃣ Initialize the Service
 
-```
+```dart
 ApiService.instance.init(
   baseUrl: 'YOUR_BASE_URL',
   needToShowLog: false,
@@ -99,7 +101,7 @@ Use it to capture the request URL, HTTP status code, parsed API error message, r
 Each request is wrapped with `ApiService.instance.request()`
 This ensures that error handling, logging, and overlay integration all happen automatically.
 
-```
+```dart
 await ApiService.instance.request(
   method: HttpMethod.get,
   url: 'SOME_REQUEST',
@@ -144,21 +146,194 @@ enum HttpMethod { get, post, put, patch, delete }
 
 ---
 
+## 🔐 Secret Knock & TOTP-Gated Debug Access (v2.0.0)
+
+In release builds, the debug overlay should stay hidden until an authorized user proves access. API Sentinel provides a **secret knock** gesture detector, a **TOTP** verification flow, and an **`AccessController`** that unlocks the log overlay after a valid code.
+
+### Flow overview
+
+```
+User performs knock pattern on a widget
+        ↓
+SecretKnockDetector fires onSecretKnock
+        ↓
+You show TotoSecretSection (dialog, bottom sheet, etc.)
+        ↓
+User enters 6-digit TOTP from authenticator app
+        ↓
+AccessController.validateCode() succeeds
+        ↓
+AccessController.enableDebugFeatures() → isDebugFeaturesAccessible = true
+        ↓
+DebugOverlayWidget becomes visible
+```
+
+### 1️⃣ Register `AccessController`
+
+Register the controller **once** near the root of your app (before any widget that needs it):
+
+```dart
+import 'package:api_sentinel/api_sentinel.dart';
+import 'package:get/get.dart';
+
+class _MyAppState extends State<MyApp> {
+  final AccessController accessController = Get.put(
+    AccessController(),
+    tag: AllControllerKeys.accessControllerKey,
+  );
+
+  // ...
+}
+```
+
+| Symbol | Role |
+| --- | --- |
+| `AccessController` | Holds TOTP secret, validates codes, exposes `isDebugFeaturesAccessible` |
+| `AllControllerKeys.accessControllerKey` | Stable GetX tag so `TotoSecretSection` can `Get.find` the same instance |
+
+**Key APIs**
+
+| Method / property | Description |
+| --- | --- |
+| `initialize()` | Loads or generates the TOTP secret. Call early (e.g. when the OTP UI opens). |
+| `validateCode(String code)` | Returns `true` when the 6-digit code matches (±1 time window). |
+| `enableDebugFeatures()` | Sets `isDebugFeaturesAccessible` to `true`. |
+| `isDebugFeaturesAccessible` | Reactive `RxBool` — gate the overlay behind this. |
+| `resetSecret()` | Clears the dev-only secure-storage secret (debug builds without dart-define). |
+
+### 2️⃣ Wrap a widget with `SecretKnockDetector`
+
+Pick **one** knock pattern for your app and use it consistently. The example uses `SecretPatterns.accessible` (double-tap, then long-press):
+
+```dart
+SecretKnockDetector(
+  knockPattern: SecretPatterns.accessible,
+  onSecretKnock: () {
+    showDialog(
+      context: context,
+      builder: (_) => Dialog(
+        child: const TotoSecretSection(),
+      ),
+    );
+  },
+  child: const Text('App title'), // any widget — title, logo, version label, etc.
+)
+```
+
+**Available patterns** (`SecretPatterns`):
+
+| Pattern | Gesture |
+| --- | --- |
+| `accessible` | Double-tap → long-press |
+| `tripleLongPress` | Long-press × 3 |
+| `shaveAndHaircut` | Tap → tap → long-press |
+| `morseSOS` | Tap×3 → long-press×3 → tap×3 |
+
+You can also pass a custom `List<KnockType>` to `knockPattern`. Steps must be completed within `resetTimeout` (default 2 seconds between steps).
+
+### 3️⃣ Show `TotoSecretSection` on knock
+
+`TotoSecretSection` is a pre-built OTP field. It finds `AccessController` by tag, calls `initialize()` on mount, validates on submit, and calls `enableDebugFeatures()` on success.
+
+Use it wherever you like — dialog, bottom sheet, or full-screen route:
+
+```dart
+onSecretKnock: () {
+  showModalBottomSheet(
+    context: context,
+    builder: (_) => const Padding(
+      padding: EdgeInsets.all(24),
+      child: TotoSecretSection(),
+    ),
+  );
+},
+```
+
+You can also build your own UI and call `accessController.validateCode(code)` directly.
+
+### 4️⃣ Gate `DebugOverlayWidget` behind access
+
+Only show the floating log button after TOTP succeeds:
+
+```dart
+Stack(
+  children: [
+    const MyHomePage(),
+    Obx(() {
+      if (!accessController.isDebugFeaturesAccessible.value) {
+        return const SizedBox.shrink();
+      }
+      return const DebugOverlayWidget();
+    }),
+  ],
+)
+```
+
+In **debug builds** without dart-defines, the first run logs an `otpauth://` URI to the console — scan it with Google Authenticator. In **release builds**, the secret comes from dart-define (see below).
+
+### 5️⃣ Pass the TOTP secret with `--dart-define`
+
+For release (and local testing that matches release), split your Base32 secret into two parts so neither half is useful alone:
+
+```bash
+flutter build apk --release \
+  --dart-define=TOTP_SECRET_PART1="FIRST_HALF_OF_BASE32_SECRET" \
+  --dart-define=TOTP_SECRET_PART2="SECOND_HALF_OF_BASE32_SECRET"
+```
+
+The app concatenates both parts at compile time: `TOTP_SECRET_PART1 + TOTP_SECRET_PART2`.
+
+**Local run with embedded secret:**
+
+```bash
+flutter run --release \
+  --dart-define=TOTP_SECRET_PART1="JBSWY3DPEHPK3PXP" \
+  --dart-define=TOTP_SECRET_PART2="GEZDGNBVGY3TQOJQ"
+```
+
+> **Important:** Register the **full combined secret** in your authenticator app, not each part separately.
+
+**CI / Xcode / Gradle**
+
+Add the same defines to your build pipeline:
+
+```yaml
+# GitHub Actions example
+- run: flutter build ipa --release
+    --dart-define=TOTP_SECRET_PART1=${{ secrets.TOTP_PART1 }}
+    --dart-define=TOTP_SECRET_PART2=${{ secrets.TOTP_PART2 }}
+```
+
+| Build mode | Secret source |
+| --- | --- |
+| Release | `TOTP_SECRET_PART1` + `TOTP_SECRET_PART2` (required) |
+| Debug + dart-define | Same embedded secret (for testing release behaviour) |
+| Debug, no dart-define | Auto-generated secret stored in secure storage; URI printed to console |
+
+### Full integration example
+
+See [`example/lib/main.dart`](./example/lib/main.dart) for a working setup with `SecretKnockDetector`, `TotoSecretSection`, `AccessController`, and `DebugOverlayWidget`.
+
+---
+
 ## 🧰 Debug Overlay
 
 
 ### 🧊 Floating Draggable Widget
 
-A persistent, draggable button gives quick access to real-time logs.
+A persistent, draggable button gives quick access to real-time logs. In production, gate it behind `AccessController.isDebugFeaturesAccessible` (see [Secret Knock & TOTP](#-secret-knock--totp-gated-debug-access-v200)).
 
-```
+```dart
 Stack(
   children: [
-    // Your main widget
-    MyApp(), 
-    // Your debug overlay button
-    const DebugOverlayWidget(),
-  ]
+    const MyHomePage(),
+    Obx(() {
+      if (!accessController.isDebugFeaturesAccessible.value) {
+        return const SizedBox.shrink();
+      }
+      return const DebugOverlayWidget();
+    }),
+  ],
 )
 ```
 
@@ -211,23 +386,28 @@ Whenever your app performs an API call through `ApiService`, it will appear in a
 
 A complete example app is included under the [`example/`](./example) directory.
 
-To run it:
+**Debug mode** (auto-generated TOTP secret printed to console):
 
 ```bash
 cd example
 flutter run
 ```
 
-It includes a test page with colored buttons for:
+**With embedded TOTP secret** (same as release):
 
-* GET
-* POST
-* PUT
-* PATCH
-* DELETE
-* 404 Error simulation
+```bash
+cd example
+flutter run \
+  --dart-define=TOTP_SECRET_PART1="YOUR_PART_1" \
+  --dart-define=TOTP_SECRET_PART2="YOUR_PART_2"
+```
 
-All using the `ApiService` and `DebugOverlay`.
+The example demonstrates:
+
+* API calls via `ApiService` (GET, POST, PUT, PATCH, DELETE)
+* `SecretKnockDetector` with `SecretPatterns.accessible`
+* `TotoSecretSection` shown in a dialog after the knock
+* `DebugOverlayWidget` gated behind `AccessController.isDebugFeaturesAccessible`
 
 ---
 

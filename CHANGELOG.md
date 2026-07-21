@@ -1,4 +1,23 @@
 # Changelog
+
+## 2.0.0
+
+Major release: gated debug access with secret knock gestures and TOTP verification.
+
+**New features:**
+
+- `SecretKnockDetector` — wrap any widget to listen for a configurable tap/long-press pattern and trigger a callback.
+- `SecretPatterns` — predefined knock sequences (`accessible`, `tripleLongPress`, `shaveAndHaircut`, `morseSOS`).
+- `AccessController` — GetX controller that manages TOTP setup, validation, and `isDebugFeaturesAccessible` state.
+- `TotoSecretSection` — ready-made 6-digit OTP input wired to `AccessController`.
+- Release builds (and debug builds with `--dart-define`) support split TOTP secrets via `TOTP_SECRET_PART1` and `TOTP_SECRET_PART2`.
+
+**Integration notes:**
+
+- Register `AccessController` once with `Get.put(..., tag: AllControllerKeys.accessControllerKey)`.
+- Place `SecretKnockDetector` on a discreet UI element; show `TotoSecretSection` in a dialog/sheet on knock.
+- Gate `DebugOverlayWidget` behind `accessController.isDebugFeaturesAccessible` so logs stay hidden until TOTP succeeds.
+
 ## 1.1.2
 
 Add curl command generation and copy support in the debug overlay.

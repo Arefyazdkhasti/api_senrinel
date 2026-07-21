@@ -1,7 +1,8 @@
-import 'package:api_sentinel/controllers/api_service.dart';
+import 'package:api_sentinel/api_sentinel.dart';
 import 'package:api_sentinel/global_configs.dart';
-import 'package:api_sentinel/widgets/debug_overlay_widget.dart';
+
 import 'package:flutter/material.dart';
+import 'package:get/get.dart';
 
 void main() {
   runApp(const MyExampleApp());
@@ -29,7 +30,10 @@ class ApiExamplePage extends StatefulWidget {
 
 class _ApiExamplePageState extends State<ApiExamplePage> {
   String _output = '';
-
+  AccessController accessController = Get.put(
+    tag: AllControllerKeys.accessControllerKey,
+    AccessController(),
+  );
   @override
   void initState() {
     super.initState();
@@ -81,6 +85,24 @@ class _ApiExamplePageState extends State<ApiExamplePage> {
             padding: const EdgeInsets.all(16),
             child: Column(
               children: [
+                const SizedBox(height: 8),
+                SecretKnockDetector(
+                  knockPattern: SecretPatterns.accessible,
+                  onSecretKnock: () {
+                    Dialog errorDialog = Dialog(
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(12.0),
+                      ), //this right here
+                      child: TotoSecretSection(),
+                    );
+                    showDialog(
+                      context: context,
+                      builder: (BuildContext context) => errorDialog,
+                    );
+                  },
+                  child: Text('Secret Knock Detector'),
+                ),
+                const SizedBox(height: 8),
                 Row(
                   children: [
                     Expanded(
@@ -283,8 +305,12 @@ class _ApiExamplePageState extends State<ApiExamplePage> {
             ),
           ),
         ),
-        // Your debug overlay button
-        const DebugOverlayWidget(),
+        Obx(() {
+          if (!accessController.isDebugFeaturesAccessible.value) {
+            return const SizedBox.shrink();
+          }
+          return const DebugOverlayWidget();
+        }),
       ],
     );
   }
