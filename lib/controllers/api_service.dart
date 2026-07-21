@@ -2,16 +2,16 @@ import 'dart:async';
 import 'dart:io';
 
 import 'package:cookie_jar/cookie_jar.dart';
-import 'package:dio/dio.dart';
 import 'package:dio/dio.dart' as dio;
+import 'package:dio/dio.dart';
 import 'package:dio_cookie_manager/dio_cookie_manager.dart';
 import 'package:flutter/foundation.dart';
-import 'package:path_provider/path_provider.dart';
-
 import 'package:get/get.dart';
+import 'package:path_provider/path_provider.dart';
 
 import '../models/monitoring/network_monitoring_function.dart';
 import '../models/monitoring/network_monitoring_params.dart';
+import 'debug_overlay/curl_capturing_adapter.dart';
 import 'debug_overlay/debug_interceptor.dart';
 import 'debug_overlay/debug_log_controller.dart';
 import 'error_handler/error_handler.dart';
@@ -72,8 +72,8 @@ class ApiService {
   /// ```
   static Future<ApiService> init({
     required String baseUrl,
-    bool needToShowLog = false,
-    bool needToLogRequests = false,
+    bool needToShowLog = true,
+    bool needToLogRequests = true,
     // unauthorized callback
     NetworkMonitoringFunction? networkMonitoringFunction,
     int? unauthorizedStatusCode = 401,
@@ -140,6 +140,9 @@ class ApiService {
       if (!Get.isRegistered<DebugLogController>()) {
         Get.put(DebugLogController(), permanent: true);
       }
+      // Adapter runs AFTER all interceptors + Dio content-length —
+      // only place a complete curl can be built.
+      _dio.httpClientAdapter = CurlCapturingAdapter(_dio.httpClientAdapter);
       _dio.interceptors.add(DebugInterceptor());
     }
 
@@ -211,15 +214,7 @@ class ApiService {
   }) async {
     dio.Response response;
 
-    Options? defaultOptions;
-    //set base option for request if not provided
-    if (options != null) {
-      defaultOptions = options;
-    } else {
-      Map<String, String> customHeaders = headers ?? {};
-
-      defaultOptions = Options(headers: customHeaders);
-    }
+    final defaultOptions = (options ?? Options()).copyWith(headers: headers);
     try {
       // Perform the request based on the specified HTTP method.
       switch (method) {

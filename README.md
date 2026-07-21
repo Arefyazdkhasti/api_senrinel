@@ -11,6 +11,10 @@
 ✅ Customizable callbacks for success, Dio exceptions, and general exceptions  
 ✅ Centralized error handling and message parsing  
 ✅ Floating on-screen debug overlay to visualize requests  
+✅ Generate curl commands for every request
+✅ Copy generated curl with a single tap
+✅ View request headers
+✅ View response headers
 ✅ Built with `dio` and `get` (GetX) for lightweight reactivity  
 ✅ Supports Android, iOS, and Web  
 ✅ Built-in Unauthorized detection with callback (unauthorized status code, customizable unauthorized callback)
@@ -24,7 +28,7 @@ Add this line to your `pubspec.yaml`:
 
 ```yaml
 dependencies:
-  api_sentinel: ^1.1.1
+  api_sentinel: ^1.1.2
 ```
 
 Then run:
@@ -51,8 +55,8 @@ The library is built around three core layers:
 
 ### 1️⃣ Initialize the Service
 
-```dart
-await ApiService.instance.init(
+```
+ApiService.instance.init(
   baseUrl: 'YOUR_BASE_URL',
   needToShowLog: false,
   needToLogRequests: false,
@@ -65,7 +69,7 @@ await ApiService.instance.init(
     print('Status Code: ${params.statusCode}');
     print('API Error: ${params.apiErrorMessage}');
     print('Runtime Error: ${params.runTimeErrorType}');
-  },
+  }
 );
 ```
 
@@ -95,7 +99,7 @@ Use it to capture the request URL, HTTP status code, parsed API error message, r
 Each request is wrapped with `ApiService.instance.request()`
 This ensures that error handling, logging, and overlay integration all happen automatically.
 
-```dart
+```
 await ApiService.instance.request(
   method: HttpMethod.get,
   url: 'SOME_REQUEST',
@@ -147,7 +151,7 @@ enum HttpMethod { get, post, put, patch, delete }
 
 A persistent, draggable button gives quick access to real-time logs.
 
-```dart
+```
 Stack(
   children: [
     // Your main widget
@@ -165,6 +169,11 @@ Inside, you’ll see:
 * Tap any log to expand request/response JSON
 * Toggle between **Tree View** and **Pretty JSON**
 * Click to **expand full-screen**
+* View request headers
+* View response headers
+* Generate a curl command from the request
+* Copy the generated curl to the clipboard
+
 
 ### 🌳 JSON Tree Viewer
 
@@ -185,6 +194,9 @@ Whenever your app performs an API call through `ApiService`, it will appear in a
 * Status code
 * Response time
 * Response preview
+* Request headers
+* Response headers
+* Generated curl command with one-tap copy
 
 
 <p align="center">

@@ -1,4 +1,14 @@
 # Changelog
+## 1.1.2
+
+Add curl command generation and copy support in the debug overlay.
+
+**Enhancements:**
+
+- Generate a curl command for every logged request, built after interceptors and headers are applied so cookies, auth, and `content-length` are included.
+- Copy curl to clipboard from the debug log list, with the button disabled when no curl was captured.
+- View request and response headers in the debug log detail tabs.
+
 ## 1.1.1
 
 Add `dioExceptionType`, `dioMessage` and `dioUnderlyingError` to NetworkMonitoringParams 

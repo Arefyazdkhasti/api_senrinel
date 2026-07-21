@@ -1,8 +1,10 @@
-import 'package:dio/dio.dart';
 import 'package:dio/dio.dart' as dio;
+import 'package:dio/dio.dart';
 import 'package:get/get.dart';
+
 import '../../models/debug_log_entry.dart';
 import '../api_service.dart';
+import 'curl_builder.dart';
 import 'debug_log_controller.dart';
 
 class DebugInterceptor extends Interceptor {
@@ -22,6 +24,8 @@ class DebugInterceptor extends Interceptor {
       baseUrl: options.baseUrl,
       requestData: _toMap(options.data),
       queryParameters: options.queryParameters,
+      curl: CurlBuilder.fromRequestOptions(options),
+      requestHeaders: Map<String, dynamic>.from(options.headers),
     );
 
     _pendingLogs[id] = entry;
@@ -33,6 +37,10 @@ class DebugInterceptor extends Interceptor {
   void onResponse(dio.Response response, ResponseInterceptorHandler handler) {
     final id = response.requestOptions.extra['debug_id'];
     final entry = _pendingLogs.remove(id);
+    final responseHeaders = Map<String, dynamic>.from(response.headers.map);
+    final requestHeaders = Map<String, dynamic>.from(
+      response.requestOptions.headers,
+    );
 
     if (entry != null) {
       final updated = DebugLogEntry(
@@ -46,6 +54,9 @@ class DebugInterceptor extends Interceptor {
         statusCode: response.statusCode,
         responseData: response.data,
         duration: DateTime.now().difference(entry.timestamp),
+        curl: _resolveCurl(response.requestOptions, entry.curl),
+        requestHeaders: requestHeaders,
+        responseHeaders: responseHeaders,
       );
       _controller.updateLog(entry.id, updated);
     }
@@ -56,6 +67,9 @@ class DebugInterceptor extends Interceptor {
   void onError(DioException err, ErrorInterceptorHandler handler) {
     final id = err.requestOptions.extra['debug_id'];
     final entry = _pendingLogs.remove(id);
+    final responseHeaders = err.response != null
+        ? Map<String, dynamic>.from(err.response!.headers.map)
+        : null;
 
     if (entry != null) {
       final updated = DebugLogEntry(
@@ -71,10 +85,21 @@ class DebugInterceptor extends Interceptor {
         errorMessage: err.message,
         responseData: err.response?.data,
         duration: DateTime.now().difference(entry.timestamp),
+        curl: _resolveCurl(err.requestOptions, entry.curl),
+        requestHeaders: Map<String, dynamic>.from(err.requestOptions.headers),
+        responseHeaders: responseHeaders,
       );
       _controller.updateLog(entry.id, updated);
     }
     handler.next(err);
+  }
+
+  String _resolveCurl(RequestOptions options, String fallback) {
+    final fromAdapter = options.extra[CurlBuilder.extraKey];
+    if (fromAdapter is String && fromAdapter.isNotEmpty) {
+      return fromAdapter;
+    }
+    return fallback;
   }
 
   String _generateId() => DateTime.now().microsecondsSinceEpoch.toString();
