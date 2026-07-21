@@ -13,6 +13,9 @@ class DebugLogEntry {
   final bool isError;
   final String? errorMessage;
   final Duration? duration;
+  final String curl;
+  final Map<String, dynamic>? requestHeaders;
+  final Map<String, dynamic>? responseHeaders;
 
   DebugLogEntry({
     required this.id,
@@ -20,6 +23,7 @@ class DebugLogEntry {
     required this.method,
     required this.url,
     required this.baseUrl,
+    required this.curl,
     this.requestData,
     this.queryParameters,
     this.statusCode,
@@ -27,5 +31,7 @@ class DebugLogEntry {
     this.isError = false,
     this.errorMessage,
     this.duration,
+    this.requestHeaders,
+    this.responseHeaders,
   });
 }

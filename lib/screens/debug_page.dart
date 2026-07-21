@@ -1,10 +1,13 @@
 import 'dart:convert';
+
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:get/get.dart';
 
 import '../../global_configs.dart';
 import '../controllers/api_service.dart';
 import '../controllers/debug_overlay/debug_log_controller.dart';
+import '../models/debug_log_entry.dart';
 import '../widgets/json_tree_view.dart';
 import '../widgets/pretty_json_view.dart';
 import 'json_full_screen_view.dart';
@@ -200,79 +203,103 @@ class _DebugPageState extends State<DebugPage> {
                         separatorBuilder: (context, index) => const Divider(),
                         itemBuilder: (context, index) {
                           final log = controller.logs[index];
-                          return ExpansionTile(
-                            backgroundColor: Colors.transparent,
-                            collapsedBackgroundColor: Colors.transparent,
-                            title: Column(
-                              crossAxisAlignment: CrossAxisAlignment.start,
+                          return Padding(
+                            padding: const EdgeInsets.all(16),
+                            child: Column(
                               children: [
                                 Row(
-                                  children: [
-                                    methodType(log.method),
-                                    const SizedBox(width: 8),
-                                    requestStatusCode(log.statusCode ?? 0),
-                                  ],
-                                ),
-                                const SizedBox(height: 8),
-                                Row(
-                                  children: [
-                                    Expanded(
-                                      child: Text(
-                                        log.url.replaceAll(log.baseUrl, ''),
-                                        style: TextStyle(
-                                          color: log.isError
-                                              ? Colors.red
-                                              : (log.statusCode != null &&
-                                                        log.statusCode! >= 400
-                                                    ? Colors.orange
-                                                    : Colors.green),
-                                        ),
-                                        maxLines: 2,
-                                        overflow: TextOverflow.ellipsis,
-                                      ),
-                                    ),
-                                  ],
-                                ),
-                                const SizedBox(height: 8),
-                                Row(
+                                  mainAxisAlignment:
+                                      MainAxisAlignment.spaceBetween,
                                   children: [
                                     Row(
+                                      mainAxisAlignment:
+                                          MainAxisAlignment.spaceBetween,
                                       children: [
-                                        const Icon(
-                                          Icons.timer_outlined,
-                                          size: 16,
-                                        ),
-                                        const SizedBox(width: 4),
-                                        Text(
-                                          '${DateTime.now().difference(log.timestamp).inSeconds}s ago',
-                                        ),
-                                        Text(
-                                          ' | Duration: ${log.duration?.inMilliseconds ?? 0}ms',
-                                          style: theme.textTheme.bodyMedium
-                                              ?.copyWith(
-                                                color:
-                                                    (log
-                                                                .duration
-                                                                ?.inMilliseconds ??
-                                                            0) >
-                                                        3000
-                                                    ? Colors.red
-                                                    : Colors.grey,
-                                              ),
-                                        ),
+                                        methodType(log.method),
+                                        const SizedBox(width: 8),
+                                        requestStatusCode(log.statusCode ?? 0),
                                       ],
                                     ),
+                                    TextButton.icon(
+                                      onPressed: () {
+                                        Clipboard.setData(
+                                          ClipboardData(text: log.curl),
+                                        );
+                                      },
+                                      icon: const Icon(Icons.copy),
+                                      label: const Text('Copy curl'),
+                                    ),
                                   ],
+                                ),
+                                ExpansionTile(
+                                  backgroundColor: Colors.transparent,
+                                  collapsedBackgroundColor: Colors.transparent,
+                                  title: Column(
+                                    crossAxisAlignment:
+                                        CrossAxisAlignment.start,
+                                    children: [
+                                      Row(
+                                        children: [
+                                          Expanded(
+                                            child: Text(
+                                              log.url.replaceAll(
+                                                log.baseUrl,
+                                                '',
+                                              ),
+                                              style: TextStyle(
+                                                color: log.isError
+                                                    ? Colors.red
+                                                    : (log.statusCode != null &&
+                                                              log.statusCode! >=
+                                                                  400
+                                                          ? Colors.orange
+                                                          : Colors.green),
+                                              ),
+                                              maxLines: 2,
+                                              overflow: TextOverflow.ellipsis,
+                                            ),
+                                          ),
+                                        ],
+                                      ),
+                                      Row(
+                                        children: [
+                                          Row(
+                                            children: [
+                                              const Icon(
+                                                Icons.timer_outlined,
+                                                size: 16,
+                                              ),
+                                              const SizedBox(width: 4),
+                                              Text(
+                                                '${DateTime.now().difference(log.timestamp).inSeconds}s ago',
+                                              ),
+                                              Text(
+                                                ' | Duration: ${log.duration?.inMilliseconds ?? 0}ms',
+                                                style: theme
+                                                    .textTheme
+                                                    .bodyMedium
+                                                    ?.copyWith(
+                                                      color:
+                                                          (log
+                                                                      .duration
+                                                                      ?.inMilliseconds ??
+                                                                  0) >
+                                                              3000
+                                                          ? Colors.red
+                                                          : Colors.grey,
+                                                    ),
+                                              ),
+                                            ],
+                                          ),
+                                        ],
+                                      ),
+                                    ],
+                                  ),
+
+                                  children: [_buildSection(log)],
                                 ),
                               ],
                             ),
-                            children: [
-                              if (log.requestData != null)
-                                _buildSection('Request', log.requestData),
-                              _buildSection('Response', log.responseData),
-                              if (log.errorMessage != null)
-                                _buildSection('Error', log.errorMessage),
-                            ],
                           );
                         },
                       ),
@@ -284,15 +311,100 @@ class _DebugPageState extends State<DebugPage> {
     );
   }
 
-  Widget _buildSection(String title, dynamic content) {
+  Widget _buildSection(DebugLogEntry log) {
+    final tabs = <Tab>[];
+    final views = <Widget>[];
+
+    if (log.requestData != null) {
+      tabs.add(const Tab(text: 'Request'));
+      views.add(
+        JsonViewerWidget(
+          data: log.requestData,
+          title: 'Request',
+          showPretty: showPrettyJson,
+        ),
+      );
+    }
+    if (log.responseData != null) {
+      tabs.add(const Tab(text: 'Response'));
+      views.add(
+        JsonViewerWidget(
+          data: log.responseData,
+          title: 'Response',
+          showPretty: showPrettyJson,
+        ),
+      );
+    }
+    if (log.requestHeaders?.isNotEmpty == true) {
+      tabs.add(const Tab(text: 'Request Headers'));
+      views.add(
+        JsonViewerWidget(
+          data: log.requestHeaders,
+          title: 'Request Headers',
+          showPretty: showPrettyJson,
+        ),
+      );
+    }
+
+    if (log.responseHeaders?.isNotEmpty == true) {
+      tabs.add(const Tab(text: 'Response Headers'));
+      views.add(
+        JsonViewerWidget(
+          data: log.responseHeaders,
+          title: 'Response Headers',
+          showPretty: showPrettyJson,
+        ),
+      );
+    }
+
+    if (log.errorMessage != null) {
+      tabs.add(const Tab(text: 'Error'));
+      views.add(
+        JsonViewerWidget(
+          data: log.errorMessage,
+          title: 'Error',
+          showPretty: showPrettyJson,
+        ),
+      );
+    }
+
+    if (tabs.isEmpty) {
+      return const SizedBox();
+    }
+
     return Container(
       width: double.infinity,
       color: Colors.grey[900],
-      padding: const EdgeInsets.all(8),
-      child: JsonViewerWidget(
-        data: content,
-        title: title,
-        showPretty: showPrettyJson,
+      padding: const EdgeInsets.all(12),
+      child: DefaultTabController(
+        length: tabs.length,
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            TabBar(
+              isScrollable: true,
+              tabAlignment: TabAlignment.start,
+              tabs: tabs,
+              labelColor: Colors.blueAccent,
+              // selected tab
+              unselectedLabelColor: Colors.grey,
+              // unselected tabs
+              indicatorColor: Colors.green,
+            ),
+            Builder(
+              builder: (context) {
+                final controller = DefaultTabController.of(context);
+
+                return AnimatedBuilder(
+                  animation: controller,
+                  builder: (_, __) {
+                    return views[controller.index];
+                  },
+                );
+              },
+            ),
+          ],
+        ),
       ),
     );
   }
@@ -316,28 +428,31 @@ class JsonViewerWidget extends StatelessWidget {
   Widget build(BuildContext context) {
     final jsonData = _parseJsonData(data);
 
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Text(
-          title,
-          style: const TextStyle(
-            color: Colors.amberAccent,
-            fontWeight: FontWeight.bold,
+    return SingleChildScrollView(
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          const SizedBox(height: 8),
+          Text(
+            title,
+            style: const TextStyle(
+              color: Colors.amberAccent,
+              fontWeight: FontWeight.bold,
+            ),
           ),
-        ),
-        const SizedBox(height: 4),
-        Container(
-          width: double.infinity,
-          constraints: const BoxConstraints(minHeight: 100, maxHeight: 400),
-          decoration: BoxDecoration(
-            color: Colors.black,
-            borderRadius: BorderRadius.circular(8),
-            border: Border.all(color: Colors.grey[800]!),
+          const SizedBox(height: 8),
+          Container(
+            width: double.infinity,
+            constraints: const BoxConstraints(minHeight: 100, maxHeight: 400),
+            decoration: BoxDecoration(
+              color: Colors.black,
+              borderRadius: BorderRadius.circular(8),
+              border: Border.all(color: Colors.grey[800]!),
+            ),
+            child: _buildViewer(jsonData, context),
           ),
-          child: _buildViewer(jsonData, context),
-        ),
-      ],
+        ],
+      ),
     );
   }
 

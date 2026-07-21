@@ -43,16 +43,20 @@ class _ApiExamplePageState extends State<ApiExamplePage> {
     required HttpMethod method,
     required String path,
     dynamic data,
+    String? authToken,
+    Map<String, String>? headers,
   }) {
     ApiService.instance.request(
       method: method,
       url: path,
       data: data,
+      authToken: authToken,
+      headers: headers,
       onCatchDioException: (dioErr) {
         setState(() {
           _output =
-              'DioException: ${dioErr.message}\n' +
-              'Status: ${dioErr.response?.statusCode}\n' +
+              'DioException: ${dioErr.message}\n'
+              'Status: ${dioErr.response?.statusCode}\n'
               'Data: ${dioErr.response?.data}';
         });
       },
