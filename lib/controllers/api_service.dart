@@ -204,7 +204,6 @@ class ApiService {
     Map<String, dynamic>? queryParameters,
     Options? options,
     Map<String, String>? headers,
-    String? authToken,
     CancelToken? cancelToken,
     void Function(int, int)? onSendProgress,
     void Function(int, int)? onReceiveProgress,
@@ -215,22 +214,7 @@ class ApiService {
   }) async {
     dio.Response response;
 
-    // collect all headers, then add Bearer auth from authToken
-    final mergedHeaders = <String, dynamic>{...?options?.headers, ...?headers};
-    if (authToken != null && authToken.isNotEmpty) {
-      final hasAuth = mergedHeaders.keys.any(
-        (k) => k.toLowerCase() == HttpHeaders.authorizationHeader,
-      );
-      if (!hasAuth) {
-        mergedHeaders[HttpHeaders.authorizationHeader] = _normalizeAuthHeader(
-          authToken,
-        );
-      }
-    }
-
-    final defaultOptions = (options ?? Options()).copyWith(
-      headers: mergedHeaders,
-    );
+    final defaultOptions = (options ?? Options()).copyWith(headers: headers);
     try {
       // Perform the request based on the specified HTTP method.
       switch (method) {
@@ -326,13 +310,6 @@ class ApiService {
         );
       }
     }
-  }
-
-  /// Accepts a raw token or a full scheme value
-  static String _normalizeAuthHeader(String authToken) {
-    final trimmed = authToken.trim();
-    if (trimmed.contains(' ')) return trimmed;
-    return 'Bearer $trimmed';
   }
 
   /// Clears all cookies stored by Dio.

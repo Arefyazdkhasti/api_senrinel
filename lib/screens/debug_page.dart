@@ -203,11 +203,11 @@ class _DebugPageState extends State<DebugPage> {
                         separatorBuilder: (context, index) => const Divider(),
                         itemBuilder: (context, index) {
                           final log = controller.logs[index];
-                          return Padding(
-                            padding: const EdgeInsets.all(16),
-                            child: Column(
-                              children: [
-                                Row(
+                          return Column(
+                            children: [
+                              Padding(
+                                padding: globalMargin * 4,
+                                child: Row(
                                   mainAxisAlignment:
                                       MainAxisAlignment.spaceBetween,
                                   children: [
@@ -221,85 +221,104 @@ class _DebugPageState extends State<DebugPage> {
                                       ],
                                     ),
                                     TextButton.icon(
-                                      onPressed: () {
-                                        Clipboard.setData(
-                                          ClipboardData(text: log.curl),
-                                        );
-                                      },
-                                      icon: const Icon(Icons.copy),
-                                      label: const Text('Copy curl'),
+                                      onPressed: log.curl.isEmpty
+                                          ? null
+                                          : () {
+                                              Clipboard.setData(
+                                                ClipboardData(text: log.curl),
+                                              );
+                                              ScaffoldMessenger.of(
+                                                context,
+                                              ).showSnackBar(
+                                                const SnackBar(
+                                                  content: Text(
+                                                    'Curl copied to clipboard',
+                                                  ),
+                                                  duration: Duration(
+                                                    seconds: 2,
+                                                  ),
+                                                ),
+                                              );
+                                            },
+                                      icon: Icon(
+                                        Icons.copy,
+                                        color: theme.colorScheme.outline,
+                                      ),
+                                      label: Text(
+                                        log.curl.isEmpty
+                                            ? 'No curl'
+                                            : 'Copy curl',
+                                        style: theme.textTheme.bodyMedium
+                                            ?.copyWith(
+                                              color: theme.colorScheme.outline,
+                                            ),
+                                      ),
                                     ),
                                   ],
                                 ),
-                                ExpansionTile(
-                                  backgroundColor: Colors.transparent,
-                                  collapsedBackgroundColor: Colors.transparent,
-                                  title: Column(
-                                    crossAxisAlignment:
-                                        CrossAxisAlignment.start,
-                                    children: [
-                                      Row(
-                                        children: [
-                                          Expanded(
-                                            child: Text(
-                                              log.url.replaceAll(
-                                                log.baseUrl,
-                                                '',
-                                              ),
-                                              style: TextStyle(
-                                                color: log.isError
-                                                    ? Colors.red
-                                                    : (log.statusCode != null &&
-                                                              log.statusCode! >=
-                                                                  400
-                                                          ? Colors.orange
-                                                          : Colors.green),
-                                              ),
-                                              maxLines: 2,
-                                              overflow: TextOverflow.ellipsis,
+                              ),
+                              ExpansionTile(
+                                backgroundColor: Colors.transparent,
+                                collapsedBackgroundColor: Colors.transparent,
+                                title: Column(
+                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                  children: [
+                                    Row(
+                                      children: [
+                                        Expanded(
+                                          child: Text(
+                                            log.url.replaceAll(log.baseUrl, ''),
+                                            style: TextStyle(
+                                              color: log.isError
+                                                  ? Colors.red
+                                                  : (log.statusCode != null &&
+                                                            log.statusCode! >=
+                                                                400
+                                                        ? Colors.orange
+                                                        : Colors.green),
                                             ),
+                                            maxLines: 2,
+                                            overflow: TextOverflow.ellipsis,
                                           ),
-                                        ],
-                                      ),
-                                      Row(
-                                        children: [
-                                          Row(
-                                            children: [
-                                              const Icon(
-                                                Icons.timer_outlined,
-                                                size: 16,
-                                              ),
-                                              const SizedBox(width: 4),
-                                              Text(
-                                                '${DateTime.now().difference(log.timestamp).inSeconds}s ago',
-                                              ),
-                                              Text(
-                                                ' | Duration: ${log.duration?.inMilliseconds ?? 0}ms',
-                                                style: theme
-                                                    .textTheme
-                                                    .bodyMedium
-                                                    ?.copyWith(
-                                                      color:
-                                                          (log
-                                                                      .duration
-                                                                      ?.inMilliseconds ??
-                                                                  0) >
-                                                              3000
-                                                          ? Colors.red
-                                                          : Colors.grey,
-                                                    ),
-                                              ),
-                                            ],
-                                          ),
-                                        ],
-                                      ),
-                                    ],
-                                  ),
-
-                                  children: [_buildSection(log)],
+                                        ),
+                                      ],
+                                    ),
+                                    Row(
+                                      children: [
+                                        Row(
+                                          children: [
+                                            const Icon(
+                                              Icons.timer_outlined,
+                                              size: 16,
+                                            ),
+                                            const SizedBox(width: 4),
+                                            Text(
+                                              '${DateTime.now().difference(log.timestamp).inSeconds}s ago',
+                                            ),
+                                            Text(
+                                              ' | Duration: ${log.duration?.inMilliseconds ?? 0}ms',
+                                              style: theme.textTheme.bodyMedium
+                                                  ?.copyWith(
+                                                    color:
+                                                        (log
+                                                                    .duration
+                                                                    ?.inMilliseconds ??
+                                                                0) >
+                                                            3000
+                                                        ? Colors.red
+                                                        : Colors.grey,
+                                                  ),
+                                            ),
+                                          ],
+                                        ),
+                                      ],
+                                    ),
+                                  ],
                                 ),
-                              ],
-                            ),
+
+                                children: [_buildSection(log)],
+                              ),
+                            ],
                           );
                         },
                       ),
@@ -314,6 +333,7 @@ class _DebugPageState extends State<DebugPage> {
   Widget _buildSection(DebugLogEntry log) {
     final tabs = <Tab>[];
     final views = <Widget>[];
+    final theme = Theme.of(context);
 
     if (log.requestData != null) {
       tabs.add(const Tab(text: 'Request'));
@@ -380,7 +400,16 @@ class _DebugPageState extends State<DebugPage> {
         length: tabs.length,
         child: Column(
           mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
           children: [
+            Text(
+              log.baseUrl,
+              style: theme.textTheme.bodyMedium?.copyWith(
+                color: theme.colorScheme.outline,
+              ),
+              maxLines: 2,
+              overflow: TextOverflow.ellipsis,
+            ),
             TabBar(
               isScrollable: true,
               tabAlignment: TabAlignment.start,
@@ -389,17 +418,16 @@ class _DebugPageState extends State<DebugPage> {
               // selected tab
               unselectedLabelColor: Colors.grey,
               // unselected tabs
-              indicatorColor: Colors.green,
+              indicatorColor: Colors.blueAccent,
             ),
             Builder(
               builder: (context) {
-                final controller = DefaultTabController.of(context);
+                final controller = DefaultTabController.maybeOf(context);
+                if (controller == null) return const SizedBox();
 
                 return AnimatedBuilder(
                   animation: controller,
-                  builder: (_, __) {
-                    return views[controller.index];
-                  },
+                  builder: (_, __) => views[controller.index],
                 );
               },
             ),

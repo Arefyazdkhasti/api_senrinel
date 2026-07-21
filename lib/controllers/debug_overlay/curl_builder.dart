@@ -35,7 +35,7 @@ class CurlBuilder {
         () => 'Dart/${Platform.version.split(' ').first} (dart:io)',
       );
       headers.putIfAbsent(HttpHeaders.acceptEncodingHeader, () => 'gzip');
-      headers.putIfAbsent(HttpHeaders.hostHeader, () => options.uri.host);
+      headers.putIfAbsent(HttpHeaders.hostHeader, () => _hostHeader(options.uri));
     }
 
     headers.forEach((key, value) {
@@ -50,19 +50,43 @@ class CurlBuilder {
     });
 
     if (options.data != null) {
-      final body = _encodeBody(options.data);
-      buffer.write(" --data '${_escapeShell(body)}'");
+      if (options.data is FormData) {
+        _writeFormData(buffer, options.data as FormData);
+      } else {
+        final body = _encodeBody(options.data);
+        buffer.write(" --data '${_escapeShell(body)}'");
+      }
     }
 
     buffer.write(" '${options.uri}'");
     return buffer.toString();
   }
 
+  /// Host header value, including port when non-default for the scheme.
+  static String _hostHeader(Uri uri) {
+    final isDefaultPort =
+        (uri.scheme == 'https' && uri.port == 443) ||
+        (uri.scheme == 'http' && uri.port == 80);
+    return isDefaultPort ? uri.host : '${uri.host}:${uri.port}';
+  }
+
+  /// Emits `-F` flags for multipart fields and file placeholders.
+  static void _writeFormData(StringBuffer buffer, FormData data) {
+    for (final field in data.fields) {
+      buffer.write(
+        " -F '${_escapeShell(field.key)}=${_escapeShell(field.value)}'",
+      );
+    }
+    for (final file in data.files) {
+      final filename = file.value.filename ?? 'file';
+      buffer.write(
+        " -F '${_escapeShell(file.key)}=@${_escapeShell(filename)}'",
+      );
+    }
+  }
+
   static String _encodeBody(dynamic data) {
     if (data is String) return data;
-    if (data is FormData) {
-      return data.fields.map((e) => '${e.key}=${e.value}').join('&');
-    }
     return jsonEncode(data);
   }
 

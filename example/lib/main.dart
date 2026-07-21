@@ -43,14 +43,12 @@ class _ApiExamplePageState extends State<ApiExamplePage> {
     required HttpMethod method,
     required String path,
     dynamic data,
-    String? authToken,
     Map<String, String>? headers,
   }) {
     ApiService.instance.request(
       method: method,
       url: path,
       data: data,
-      authToken: authToken,
       headers: headers,
       onCatchDioException: (dioErr) {
         setState(() {
