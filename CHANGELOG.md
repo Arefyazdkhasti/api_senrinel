@@ -1,5 +1,8 @@
 # Changelog
 
+## 2.0.1
+Add optional runtime exception monitoring support to ApiService.
+
 ## 2.0.0
 
 Major release: gated debug access with secret knock gestures and TOTP verification.

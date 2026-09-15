@@ -59,6 +59,7 @@ class ApiService {
     return instance;
   }
 
+  VoidCallback? _exceptionMonitoringFunctions;
   NetworkMonitoringFunction? _networkMonitoringFunction;
 
   // ──────────────────────────────────────────────
@@ -79,6 +80,7 @@ class ApiService {
     int? unauthorizedStatusCode = 401,
     void Function()? onUnauthorizedCallBack,
     bool needInitialGlobalInstance = true,
+    VoidCallback? exceptionMonitoringFunctions,
   }) async {
     final service = ApiService._internal();
     await service.initConfig(
@@ -88,6 +90,7 @@ class ApiService {
       networkMonitoringFunction: networkMonitoringFunction,
       unauthorizedStatusCode: unauthorizedStatusCode,
       onUnauthorizedCallBack: onUnauthorizedCallBack,
+      exceptionMonitoringFunctions: exceptionMonitoringFunctions,
     );
     if (needInitialGlobalInstance) {
       _instance = service;
@@ -102,6 +105,7 @@ class ApiService {
     NetworkMonitoringFunction? networkMonitoringFunction,
     required int? unauthorizedStatusCode,
     void Function()? onUnauthorizedCallBack,
+    VoidCallback? exceptionMonitoringFunctions,
   }) async {
     _dio = Dio(
       BaseOptions(
@@ -113,6 +117,8 @@ class ApiService {
     );
 
     _networkMonitoringFunction = networkMonitoringFunction;
+
+    _exceptionMonitoringFunctions = exceptionMonitoringFunctions;
 
     // Handle cookie from server
     if (!kIsWeb) {
@@ -281,34 +287,37 @@ class ApiService {
       await onSuccess(response);
     } on DioException catch (e) {
       onCatchDioException(e);
-      if (_networkMonitoringFunction != null) {
-        _networkMonitoringFunction!.call(
-          NetworkMonitoringParams(
-            stackTrace: e.stackTrace,
-            statusCode: e.response?.statusCode,
-            requestUrl: e.requestOptions.uri.toString(),
-            apiErrorMessage:
-                '${e.response?.statusMessage != null ? '${e.response?.statusMessage} / ' : ''}${handleErrorMessage(e, key: handleErrorMessageKey)}',
-            errorMessage: e.toString(),
-            runTimeErrorType: e,
-            dioExceptionType: e.type.name,
-            dioMessage: e.message,
-            dioUnderlyingError: e.error?.toString(),
-          ),
-        );
-      }
+
+      // Call monitoring API when trouble in network
+      _networkMonitoringFunction?.call(
+        NetworkMonitoringParams(
+          stackTrace: e.stackTrace,
+          statusCode: e.response?.statusCode,
+          requestUrl: e.requestOptions.uri.toString(),
+          apiErrorMessage:
+              '${e.response?.statusMessage != null ? '${e.response?.statusMessage} / ' : ''}${handleErrorMessage(e, key: handleErrorMessageKey)}',
+          errorMessage: e.toString(),
+          runTimeErrorType: e,
+          dioExceptionType: e.type.name,
+          dioMessage: e.message,
+          dioUnderlyingError: e.error?.toString(),
+        ),
+      );
     } catch (e) {
       onCatchException(e);
-      if (_networkMonitoringFunction != null) {
-        _networkMonitoringFunction!.call(
-          NetworkMonitoringParams(
-            requestUrl: url,
-            apiErrorMessage: handleErrorMessage(e, key: handleErrorMessageKey),
-            errorMessage: e.toString(),
-            runTimeErrorType: e,
-          ),
-        );
-      }
+
+      // Call monitoring API when trouble in network
+      _networkMonitoringFunction?.call(
+        NetworkMonitoringParams(
+          requestUrl: url,
+          apiErrorMessage: handleErrorMessage(e, key: handleErrorMessageKey),
+          errorMessage: e.toString(),
+          runTimeErrorType: e,
+        ),
+      );
+
+      // Call exception errors like `casting errors`
+      _exceptionMonitoringFunctions?.call();
     }
   }
 
