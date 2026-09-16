@@ -30,7 +30,7 @@ Add this line to your `pubspec.yaml`:
 
 ```yaml
 dependencies:
-  api_sentinel: ^latest
+  api_sentinel: ^2.0.1
 ```
 
 Then run:
