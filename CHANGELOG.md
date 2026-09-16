@@ -1,5 +1,17 @@
 # Changelog
 
+## 2.0.2
+
+Fix runtime exception monitoring so callbacks receive exception details and always run.
+
+**Fixes:**
+
+- `exceptionMonitoringFunctions` now receives `ExceptionMonitoringParams` (exception, stack trace, request URL) instead of a no-arg `VoidCallback`.
+- Invoke exception monitoring before other catch handlers, and isolate monitoring callbacks so a throwing `onCatchException` or network monitor cannot skip exception reporting.
+
+## 2.0.1
+Add optional runtime exception monitoring support to ApiService.
+
 ## 2.0.0
 
 Major release: gated debug access with secret knock gestures and TOTP verification.

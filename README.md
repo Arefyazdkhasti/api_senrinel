@@ -30,7 +30,7 @@ Add this line to your `pubspec.yaml`:
 
 ```yaml
 dependencies:
-  api_sentinel: ^2.0.0
+  api_sentinel: ^2.0.2
 ```
 
 Then run:
@@ -66,12 +66,23 @@ ApiService.instance.init(
   onUnauthorizedCallBack: () {
     // Handle session expiration or redirect to login.
   },
-  networkMonitoringFunction: (params) {
-    print('Request URL: ${params.requestUrl}');
-    print('Status Code: ${params.statusCode}');
-    print('API Error: ${params.apiErrorMessage}');
-    print('Runtime Error: ${params.runTimeErrorType}');
-  }
+  networkMonitoringFunction: NetworkMonitoringFunction(
+    function: (params) {
+      print('Request URL: ${params.requestUrl}');
+      print('Status Code: ${params.statusCode}');
+      print('API Error: ${params.apiErrorMessage}');
+      print('Runtime Error: ${params.runTimeErrorType}');
+    },
+  ),
+  exceptionMonitoringFunctions: ExceptionMonitoringFunction(
+    function: (params) {
+      // Send exception information to your monitoring service.
+      // Example: Sentry, Crashlytics, etc.
+      print('Exception: ${params.exception}');
+      print('StackTrace: ${params.stackTrace}');
+      print('Request URL: ${params.requestUrl}');
+    },
+  ),
 );
 ```
 
@@ -96,7 +107,32 @@ Use it to capture the request URL, HTTP status code, parsed API error message, r
 
 ---
 
-### 3️⃣ Make a Request
+### 3️⃣ Monitor Runtime Exceptions
+
+`exceptionMonitoringFunctions` provides an optional callback for monitoring unexpected runtime exceptions that occur while processing an API request.
+
+Unlike `networkMonitoringFunction`, which receives structured information about network and API failures, this callback is triggered when an exception is caught outside the DioException flow. It receives an `ExceptionMonitoringParams` object with the caught exception, stack trace, and request URL.
+
+```dart
+class ExceptionMonitoringParams {
+  final Object exception;
+  final StackTrace stackTrace;
+  final String? requestUrl;
+  final String? errorMessage;
+}
+```
+
+This is useful for reporting errors such as:
+
+* Response parsing errors
+* Type casting errors
+* Unexpected runtime exceptions
+* Model conversion failures
+* Other non-Dio exceptions that occur during request handling
+
+---
+
+### 4️⃣ Make a Request
 
 Each request is wrapped with `ApiService.instance.request()`
 This ensures that error handling, logging, and overlay integration all happen automatically.
@@ -121,7 +157,7 @@ This pattern applies to **any HTTP method** — just change the `method` and `ur
 
 ---
 
-### 4️⃣ Supported HTTP Methods
+### 5️⃣ Supported HTTP Methods
 
 You can use all standard HTTP verbs through the `HttpMethod` enum:
 

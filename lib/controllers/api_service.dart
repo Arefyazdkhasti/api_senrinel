@@ -9,6 +9,8 @@ import 'package:flutter/foundation.dart';
 import 'package:get/get.dart';
 import 'package:path_provider/path_provider.dart';
 
+import '../models/monitoring/exception_monitoring_function.dart';
+import '../models/monitoring/exception_monitoring_params.dart';
 import '../models/monitoring/network_monitoring_function.dart';
 import '../models/monitoring/network_monitoring_params.dart';
 import 'debug_overlay/curl_capturing_adapter.dart';
@@ -59,6 +61,7 @@ class ApiService {
     return instance;
   }
 
+  ExceptionMonitoringFunction? _exceptionMonitoringFunctions;
   NetworkMonitoringFunction? _networkMonitoringFunction;
 
   // ──────────────────────────────────────────────
@@ -79,6 +82,7 @@ class ApiService {
     int? unauthorizedStatusCode = 401,
     void Function()? onUnauthorizedCallBack,
     bool needInitialGlobalInstance = true,
+    ExceptionMonitoringFunction? exceptionMonitoringFunctions,
   }) async {
     final service = ApiService._internal();
     await service.initConfig(
@@ -88,6 +92,7 @@ class ApiService {
       networkMonitoringFunction: networkMonitoringFunction,
       unauthorizedStatusCode: unauthorizedStatusCode,
       onUnauthorizedCallBack: onUnauthorizedCallBack,
+      exceptionMonitoringFunctions: exceptionMonitoringFunctions,
     );
     if (needInitialGlobalInstance) {
       _instance = service;
@@ -102,6 +107,7 @@ class ApiService {
     NetworkMonitoringFunction? networkMonitoringFunction,
     required int? unauthorizedStatusCode,
     void Function()? onUnauthorizedCallBack,
+    ExceptionMonitoringFunction? exceptionMonitoringFunctions,
   }) async {
     _dio = Dio(
       BaseOptions(
@@ -113,6 +119,8 @@ class ApiService {
     );
 
     _networkMonitoringFunction = networkMonitoringFunction;
+
+    _exceptionMonitoringFunctions = exceptionMonitoringFunctions;
 
     // Handle cookie from server
     if (!kIsWeb) {
@@ -281,33 +289,53 @@ class ApiService {
       await onSuccess(response);
     } on DioException catch (e) {
       onCatchDioException(e);
-      if (_networkMonitoringFunction != null) {
-        _networkMonitoringFunction!.call(
-          NetworkMonitoringParams(
-            stackTrace: e.stackTrace,
-            statusCode: e.response?.statusCode,
-            requestUrl: e.requestOptions.uri.toString(),
-            apiErrorMessage:
-                '${e.response?.statusMessage != null ? '${e.response?.statusMessage} / ' : ''}${handleErrorMessage(e, key: handleErrorMessageKey)}',
+
+      // Call monitoring API when trouble in network
+      _networkMonitoringFunction?.call(
+        NetworkMonitoringParams(
+          stackTrace: e.stackTrace,
+          statusCode: e.response?.statusCode,
+          requestUrl: e.requestOptions.uri.toString(),
+          apiErrorMessage:
+              '${e.response?.statusMessage != null ? '${e.response?.statusMessage} / ' : ''}${handleErrorMessage(e, key: handleErrorMessageKey)}',
+          errorMessage: e.toString(),
+          runTimeErrorType: e,
+          dioExceptionType: e.type.name,
+          dioMessage: e.message,
+          dioUnderlyingError: e.error?.toString(),
+        ),
+      );
+    } catch (e, stackTrace) {
+      // Invoke exception monitoring first and in isolation so a throwing
+      // onCatchException / network monitor cannot skip runtime error reporting.
+      try {
+        _exceptionMonitoringFunctions?.call(
+          ExceptionMonitoringParams(
+            exception: e,
+            stackTrace: stackTrace,
+            requestUrl: url,
             errorMessage: e.toString(),
-            runTimeErrorType: e,
-            dioExceptionType: e.type.name,
-            dioMessage: e.message,
-            dioUnderlyingError: e.error?.toString(),
           ),
         );
+      } catch (_) {
+        // Monitoring failures must not suppress request error handling.
       }
-    } catch (e) {
+
       onCatchException(e);
-      if (_networkMonitoringFunction != null) {
-        _networkMonitoringFunction!.call(
+
+      try {
+        // Call monitoring API when trouble in network
+        _networkMonitoringFunction?.call(
           NetworkMonitoringParams(
+            stackTrace: stackTrace,
             requestUrl: url,
             apiErrorMessage: handleErrorMessage(e, key: handleErrorMessageKey),
             errorMessage: e.toString(),
             runTimeErrorType: e,
           ),
         );
+      } catch (_) {
+        // Monitoring failures must not suppress request error handling.
       }
     }
   }
