@@ -4,6 +4,8 @@ export 'controllers/api_service.dart';
 export 'controllers/error_handler/error_handler.dart';
 export 'models/monitoring/network_monitoring_params.dart';
 export 'models/monitoring/network_monitoring_function.dart';
+export 'models/monitoring/exception_monitoring_params.dart';
+export 'models/monitoring/exception_monitoring_function.dart';
 export 'widgets/secret_knock_detector.dart';
 export 'widgets/totp_secret_section.dart';
 export 'controllers/access_controller.dart';

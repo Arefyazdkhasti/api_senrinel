@@ -30,7 +30,7 @@ Add this line to your `pubspec.yaml`:
 
 ```yaml
 dependencies:
-  api_sentinel: ^2.0.1
+  api_sentinel: ^2.0.2
 ```
 
 Then run:
@@ -66,16 +66,23 @@ ApiService.instance.init(
   onUnauthorizedCallBack: () {
     // Handle session expiration or redirect to login.
   },
-  networkMonitoringFunction: (params) {
-    print('Request URL: ${params.requestUrl}');
-    print('Status Code: ${params.statusCode}');
-    print('API Error: ${params.apiErrorMessage}');
-    print('Runtime Error: ${params.runTimeErrorType}');
-  },
-  exceptionMonitoringFunctions: () { 
-    // Send exception information to your monitoring service. 
-    // Example: Sentry, Crashlytics, etc.
-  },
+  networkMonitoringFunction: NetworkMonitoringFunction(
+    function: (params) {
+      print('Request URL: ${params.requestUrl}');
+      print('Status Code: ${params.statusCode}');
+      print('API Error: ${params.apiErrorMessage}');
+      print('Runtime Error: ${params.runTimeErrorType}');
+    },
+  ),
+  exceptionMonitoringFunctions: ExceptionMonitoringFunction(
+    function: (params) {
+      // Send exception information to your monitoring service.
+      // Example: Sentry, Crashlytics, etc.
+      print('Exception: ${params.exception}');
+      print('StackTrace: ${params.stackTrace}');
+      print('Request URL: ${params.requestUrl}');
+    },
+  ),
 );
 ```
 
@@ -104,7 +111,16 @@ Use it to capture the request URL, HTTP status code, parsed API error message, r
 
 `exceptionMonitoringFunctions` provides an optional callback for monitoring unexpected runtime exceptions that occur while processing an API request.
 
-Unlike `networkMonitoringFunction`, which receives structured information about network and API failures, this callback is triggered when an exception is caught outside the DioException flow.
+Unlike `networkMonitoringFunction`, which receives structured information about network and API failures, this callback is triggered when an exception is caught outside the DioException flow. It receives an `ExceptionMonitoringParams` object with the caught exception, stack trace, and request URL.
+
+```dart
+class ExceptionMonitoringParams {
+  final Object exception;
+  final StackTrace stackTrace;
+  final String? requestUrl;
+  final String? errorMessage;
+}
+```
 
 This is useful for reporting errors such as:
 
