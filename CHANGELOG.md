@@ -1,5 +1,11 @@
 # Changelog
 
+## 3.0.0
+
+### Changed
+- **Breaking:** migrate Material widgets to standalone `material_ui`.
+- Raise minimum SDK to Dart `^3.13.0` and Flutter `>=3.47.0`.
+
 ## 2.0.2
 
 Fix runtime exception monitoring so callbacks receive exception details and always run.

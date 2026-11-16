@@ -1,4 +1,4 @@
-import 'package:flutter/material.dart';
+import 'package:material_ui/material_ui.dart';
 
 EdgeInsets globalMargin = const EdgeInsets.symmetric(horizontal: 4);
 EdgeInsets globalMarginAll = const EdgeInsets.all(5);

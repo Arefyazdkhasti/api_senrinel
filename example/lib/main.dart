@@ -1,7 +1,7 @@
 import 'package:api_sentinel/api_sentinel.dart';
 import 'package:api_sentinel/global_configs.dart';
 
-import 'package:flutter/material.dart';
+import 'package:material_ui/material_ui.dart';
 import 'package:get/get.dart';
 
 void main() {
