@@ -1,6 +1,6 @@
 import 'dart:convert';
 
-import 'package:flutter/material.dart';
+import 'package:material_ui/material_ui.dart';
 import 'package:flutter/services.dart';
 import 'package:get/get.dart';
 
@@ -427,7 +427,7 @@ class _DebugPageState extends State<DebugPage> {
 
                 return AnimatedBuilder(
                   animation: controller,
-                  builder: (_, __) => views[controller.index],
+                  builder: (_, _) => views[controller.index],
                 );
               },
             ),

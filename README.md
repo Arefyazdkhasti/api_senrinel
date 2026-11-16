@@ -30,8 +30,10 @@ Add this line to your `pubspec.yaml`:
 
 ```yaml
 dependencies:
-  api_sentinel: ^2.0.2
+  api_sentinel: ^3.0.0
 ```
+
+Requires Dart `^3.13.0` and Flutter `>=3.47.0` (`material_ui`).
 
 Then run:
 

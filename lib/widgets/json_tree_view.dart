@@ -1,4 +1,4 @@
-import 'package:flutter/material.dart';
+import 'package:material_ui/material_ui.dart';
 
 /// A collapsible tree-style viewer for JSON data (Map or List).
 /// Works recursively with expandable nodes.

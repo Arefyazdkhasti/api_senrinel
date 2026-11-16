@@ -1,17 +1,20 @@
 name: api_sentinel
 description: "A lightweight Dio-powered API service for Flutter that automatically logs requests"
-version: 2.0.2
+version: 3.0.0
 homepage: https://github.com/Arefyazdkhasti/api_senrinel
 repository: https://github.com/Arefyazdkhasti/api_senrinel
 issue_tracker: https://github.com/Arefyazdkhasti/api_senrinel/issues
 
 environment:
-  sdk: ^3.10.0
-  flutter: ">=1.17.0"
+  # material_ui requires Dart >=3.13 / Flutter >=3.47.
+  sdk: ^3.13.0
+  flutter: ">=3.47.0"
 
 dependencies:
   flutter:
     sdk: flutter
+
+  material_ui: ^1.11.0
 
   # Http requests
   dio: ^5.9.0
@@ -31,13 +34,14 @@ dependencies:
 dev_dependencies:
   flutter_test:
     sdk: flutter
-  flutter_lints: ^5.0.0
+  flutter_lints: ^6.0.0
 
 # For information on the generic Dart part of this file, see the
 # following page: https://dart.dev/tools/pub/pubspec
 
 # The following section is specific to Flutter packages.
 flutter:
+  uses-material-design: true
 
   # To add assets to your package, add an assets section, like this:
   # assets:
